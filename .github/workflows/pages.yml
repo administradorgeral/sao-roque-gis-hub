@@ -34,7 +34,15 @@ jobs:
           git ls-files -z index.html .nojekyll css js data dados_oficiais/legislacao |
             while IFS= read -r -d '' file; do
               case "$file" in
-                data/*.gpkg|data/declividade_sao_roque.geojson) continue ;;
+                data/*.gpkg|data/*.db|data/*.txt|data/declividade_sao_roque.geojson)
+                  continue
+                  ;;
+                data/*.png)
+                  case "$file" in
+                    data/carta_*_mapa.png|data/rbcv_cinturao_verde_regional.png) ;;
+                    *) continue ;;
+                  esac
+                  ;;
               esac
               mkdir -p "_site/$(dirname "$file")"
               cp "$file" "_site/$file"
