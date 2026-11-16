@@ -1,0 +1,25 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.tmp
+*.bak
+*.orig
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Environment and secrets
+.env
+.env.local
+*.secret
+
+# Large offline raw data & source PDFs not loaded by WebGIS
+*.gpkg
+js/maps_pdf/
+sao_roque_geodados.db
+
+# OS generated
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>São Roque GIS Hub · Central de Inteligência Territorial</title>
+  <meta name="description" content="Central de Inteligência de Mapas de São Roque (SP) - Código IBGE 3550605. SIRGAS 2000 UTM Fuso 23S.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗺️</text></svg>">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Proj4js para Projeção SIRGAS 2000 / UTM Zona 23S -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+
+  <!-- Marked.js para Renderização de Markdown Rico com IA -->
+  <script src="js/vendor/marked.min.js"></script>
+
+  <!-- Google Fonts: Inter & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Estilos da Aplicação -->
+  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/ai-search.css?v=1">
+</head>
+<body>
+
+<div id="app-container">
+  <!-- Canvas do Mapa 100% Imersivo Full-Screen (Sem Barra Superior) -->
+  <div id="map" role="application" aria-label="Mapa Interativo de São Roque"></div>
+
+  <!-- Barra de Pesquisa com IA Territorial Flutuante -->
+  <div id="ai-search-container" class="ai-search-container" role="search" aria-label="Pesquisar com IA">
+    <div class="ai-search-input-wrapper">
+      <span class="ai-search-sparkle-icon" title="Assistente IA Territorial de São Roque" aria-hidden="true">✨</span>
+      <input type="text" id="ai-search-input" class="ai-search-input" 
+             placeholder="Pergunte qualquer coisa à IA: obras da Carta 13, pousada em Canguera, desdobro de lote, recuos, bairros..."
+             autocomplete="off" spellcheck="false" aria-label="Pergunta ou busca territorial com IA">
+      <div class="ai-search-actions">
+        <span class="ai-search-kbd" title="Pressione / ou Ctrl+K para buscar com IA">/</span >
+        <button id="ai-search-clear" class="ai-search-btn-icon" type="button" aria-label="Limpar busca" style="display: none;">&times;</button>
+        <button id="ai-search-submit" class="ai-search-btn-submit" type="button" aria-label="Consultar IA" title="Consultar com IA">
+          <span>Perguntar</span>
+          <span class="btn-spark">✨</span>
+        </button>
+      </div>
+    </div>
+    <!-- Indicador de Ponto Selecionado no Mapa (Selection Pin Marker) -->
+    <div id="ai-search-pin-indicator" class="ai-pin-indicator" style="display: none;">
+      <div class="ai-pin-indicator-left">
+        <span class="ai-pin-indicator-badge">📍 PONTO SELECIONADO</span>
+        <span id="ai-pin-info-text">Carregando dados do local...</span>
+      </div>
+      <button id="ai-pin-clear-btn" class="ai-pin-clear-btn" type="button" aria-label="Remover seleção do mapa" title="Remover seleção do mapa">&times;</button>
+    </div>
+    <!-- Dropdown com Sugestões e Respostas -->
+    <div id="ai-search-dropdown" class="ai-search-dropdown" style="display: none;" aria-live="polite">
+      <!-- Sugestões Rápidas -->
+      <div id="ai-search-suggestions" class="ai-search-suggestions">
+        <div class="ai-sug-header">💡 Sugestões de Perguntas Rápidas</div>
+        <div class="ai-chips-grid">
+          <button type="button" class="ai-chip" data-query="O que é ruim em São Roque segundo o diagnóstico territorial, leis e o Plano Diretor?">⚠️ Diagnóstico Territorial e Gargalos</button>
+          <button type="button" class="ai-chip" data-query="Quais as diretrizes da Carta II sobre a Macrozona de Urbanização Específica (ZUE)?">📜 Carta II: ZUE em Mananciais</button>
+          <button type="button" class="ai-chip" data-query="Quais são as regras de zoneamento e parcelamento em Canguera na Carta VII?">🍇 Carta VII: Zoneamento de Canguera</button>
+          <button type="button" class="ai-chip" data-query="Quais são as restrições construtivas e de saneamento na APA de Itupararanga?">💧 APA de Itupararanga & Mananciais</button>
+          <button type="button" class="ai-chip" data-query="Quais são as 22 obras estruturantes e prioritárias de São Roque?">🗺️ Carta XIII: 22 Obras Prioritárias</button>
+          <button type="button" class="ai-chip" data-query="Posso abrir uma pousada em Canguera na Rota do Vinho?">🏨 Pousada em Canguera</button>
+          <button type="button" class="ai-chip" data-query="Qual o lote mínimo, taxa de ocupação e recuos no Jardim Villaça?">📐 Lote Mínimo no Jardim Villaça</button>
+          <button type="button" class="ai-chip" data-query="Como funciona o desdobro e fracionamento de lote em São Roque?">✂️ Como fazer Desdobro de Lote?</button>
+          <button type="button" class="ai-chip" data-query="O que define a Carta I sobre o Macrozoneamento Municipal de 2026?">📍 Carta I: Macrozoneamento 2026</button>
+          <button type="button" class="ai-chip" data-query="Posso parcelar ou construir em terreno com declividade acima de 30%?">⛰️ Declividade > 30% e Nascentes</button>
+          <button type="button" class="ai-chip" data-query="Onde posso construir galpão industrial e comercial em Maylasky?">🏭 Galpão e Indústria em Maylasky</button>
+          <button type="button" class="ai-chip" data-query="Como funciona a Outorga Onerosa e a Transferência de Potencial Construtivo?">💰 Outorga Onerosa (OODC) e TPC</button>
+          <button type="button" class="ai-chip" data-query="Quais são os limites de altura e restrições do Aeroporto Catarina?">✈️ Aeroporto Catarina (ASA 20km)</button>
+          <button type="button" class="ai-chip" data-query="Qual a população e quantidade de domicílios de São Roque no Censo 2022?">👥 População Censo IBGE 2022</button>
+        </div>
+      </div>
+      <!-- Painel de Resposta da IA -->
+      <div id="ai-search-response" class="ai-search-response" style="display: none;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop para Dispositivos Móveis -->
+  <div id="panel-backdrop" class="panel-backdrop" aria-hidden="true"></div>
+
+  <!-- Painel Flutuante de Camadas (Floating Layer Card) -->
+  <aside id="floating-layers-panel" class="floating-panel panel-closed" aria-label="Painel de Camadas e Basemaps" aria-hidden="true">
+    <div class="panel-header">
+      <div class="panel-brand">
+        <span class="panel-logo" aria-hidden="true">🗺️</span>
+        <div>
+          <div class="panel-title">
+            <span>São Roque GIS</span>
+            <span class="badge-ibge">3550605</span>
+          </div>
+          <div class="panel-subtitle">SIRGAS 2000 / UTM 23S</div>
+        </div>
+      </div>
+      <button id="btn-panel-close" class="btn-panel-close" type="button" aria-label="Fechar painel de camadas" title="Fechar painel">
+        &times;
+      </button>
+    </div>
+
+    <div class="panel-content">
+      <!-- Título de Seção e Abas de Navegação -->
+      <div class="panel-section-title" style="margin-bottom: 8px;">Visão Territorial</div>
+      <div class="panel-tabs-bar" role="tablist" aria-label="Seletor de Visão do Painel">
+        <button id="tab-btn-mapas" class="panel-tab-btn active" type="button" role="tab" aria-selected="true" aria-controls="tab-pane-mapas">
+          🗺️ <span>Camadas</span>
+        </button>
+        <button id="tab-btn-leis" class="panel-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="tab-pane-leis">
+          ⚖️ <span>Leis</span>
+        </button>
+        <button id="tab-btn-ai" class="panel-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="tab-pane-ai">
+          ✨ <span>Busca IA</span>
+        </button>
+      </div>
+
+      <!-- ABA 1: MAPAS E CAMADAS -->
+      <div id="tab-pane-mapas" class="tab-pane active" role="tabpanel" aria-label="Painel de Camadas">
+        <!-- Seção: Mapa de Fundo -->
+        <section>
+          <div class="panel-section-title">Mapa de Fundo (Basemap)</div>
+          <div class="basemap-chips" role="radiogroup" aria-label="Seletor de Mapa Base">
+            <button class="basemap-chip active" type="button" data-basemap="osm" role="radio" aria-checked="true">OpenStreetMap</button>
+            <button class="basemap-chip" type="button" data-basemap="satellite" role="radio" aria-checked="false">Satélite (Esri)</button>
+            <button class="basemap-chip" type="button" data-basemap="topo" role="radio" aria-checked="false">Topografia Relevo</button>
+            <button class="basemap-chip" type="button" data-basemap="gray" role="radio" aria-checked="false">Claro (Esri Gray)</button>
+          </div>
+        </section>
+
+        <!-- Seção: Esfera Municipal (Zoneamento PMD 2006 Homologado + Minuta Técnica) -->
+        <section>
+          <div class="panel-section-title">1. Esfera Municipal (São Roque)</div>
+          
+          <!-- Camada 0: Território Municipal Contínuo e Regime de Estância Turística -->
+          <div class="layer-card" style="margin-bottom: 10px; border: 1.5px solid #D4AF37;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #D4AF37; border: 1px solid #1E293B;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name" style="color: #92400e;">Território Municipal (Estância Turística)</span>
+                  <span class="layer-tag">Contorno Oficial IBGE 2022 · 30.701 ha · 115,35 km Perímetro</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Criação da Estância Turística de São Roque">⭐ Lei Estadual 6.899/90</span>
+                    <span class="badge-audit badge-purple" title="Fundo de Fomento das Estâncias DADETUR/FUMEST">🏛️ CF/SP Art. 146 (DADETUR)</span>
+                    <span class="badge-audit badge-blue" title="Lei-Matriz das Estâncias Paulistas">📜 LCE nº 1.261/15</span>
+                    <span class="badge-audit badge-green" title="Plano Diretor de Turismo Atualizado 2025-2028">🌟 PDTur (LC 140/25)</span>
+                    <span class="badge-audit badge-orange" title="Conselho Municipal de Turismo Deliberativo">👥 COMTUR (Lei 2.871/04)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização do contorno e regime do Território Municipal">
+                <input type="checkbox" id="toggle-territorio-municipal" checked aria-label="Ativar ou desativar camada do Território Municipal">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-territorio-municipal" class="opacity-range" min="0.05" max="1" step="0.05" value="0.85" aria-label="Ajustar opacidade do contorno municipal">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida do Território (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-territorio-municipal">
+                <span class="legend-toggle-text">📊 Ver Regime Territorial</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-territorio-municipal" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Território integral do Município da Estância Turística de São Roque (30.701,47 ha)"><span class="zone-dot" style="background: #D4AF37; border: 1px solid #1E293B;"></span> Estância Turística (30.701 ha)</span>
+                <span class="zone-chip" title="Linha divisória e perimétrica de São Roque (115,35 km)"><span class="zone-dot" style="background: #1E293B;"></span> Perímetro Municipal (115,35 km)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Distritos Municipais (IBGE 2022 / Lei Orgânica nº 1.801/90) -->
+          <div class="layer-card" style="margin-bottom: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #2563EB;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Distritos Municipais (IBGE 2022)</span>
+                  <span class="layer-tag">4 Distritos Oficiais · 30.701 ha · Divisão Administrativa</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-blue" title="Divisão Territorial e Distrital">🏛️ Lei Orgânica nº 1.801/90</span>
+                    <span class="badge-audit badge-purple" title="Base Cartográfica Contínua do Censo Demográfico">📊 IBGE Censo 2022</span>
+                    <span class="badge-audit badge-green" title="Descentralização e Gestão de Serviços Públicos">📍 4 Distritos</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização dos distritos municipais">
+                <input type="checkbox" id="toggle-distritos" aria-label="Ativar ou desativar camada de distritos municipais">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-distritos" class="opacity-range" min="0.1" max="1" step="0.05" value="0.70" aria-label="Ajustar opacidade da camada de distritos">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida dos Distritos (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-distritos">
+                <span class="legend-toggle-text">📊 Ver Distritos</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-distritos" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Distrito Sede de São Roque (12.336,51 ha / 40,18% · 92 setores)"><span class="zone-dot" style="background: #2563EB;"></span> São Roque - Sede (12.336 ha)</span>
+                <span class="zone-chip" title="Distrito de Canguera (8.639,17 ha / 28,14% · 43 setores)"><span class="zone-dot" style="background: #059669;"></span> Canguera (8.639 ha)</span>
+                <span class="zone-chip" title="Distrito de São João Novo (6.409,34 ha / 20,88% · 26 setores)"><span class="zone-dot" style="background: #7C3AED;"></span> São João Novo (6.409 ha)</span>
+                <span class="zone-chip" title="Distrito de Mailasqui (3.316,45 ha / 10,80% · 27 setores)"><span class="zone-dot" style="background: #D97706;"></span> Mailasqui (3.316 ha)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Setores Censitários (IBGE Censo 2022) -->
+          <div class="layer-card" style="margin-bottom: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #64748B;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Setores Censitários (IBGE Censo 2022)</span>
+                  <span class="layer-tag">188 Setores (134 Urbanos / 54 Rurais) · Malha Demográfica</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-blue" title="Sigilo Estatístico e Censo Demográfico Nacional">⚖️ Lei Federal 5.534/68</span>
+                    <span class="badge-audit badge-purple" title="Microdados Censitários Oficiais">📈 Censo IBGE 2022</span>
+                    <span class="badge-audit badge-green" title="Distribuição de Moradores e Domicílios">👥 188 Setores</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização dos setores censitários">
+                <input type="checkbox" id="toggle-setores-censitarios" aria-label="Ativar ou desativar camada de setores censitários">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-setores-censitarios" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada de setores censitários">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida dos Setores Censitários (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-setores-censitarios">
+                <span class="legend-toggle-text">📊 Ver Situação Censitária</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-setores-censitarios" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Setores Censitários de Situação Urbana (134 setores)"><span class="zone-dot" style="background: #3B82F6;"></span> Urbana (134 setores)</span>
+                <span class="zone-chip" title="Setores Censitários de Situação Rural (54 setores)"><span class="zone-dot" style="background: #10B981;"></span> Rural (54 setores)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Sistema Viário e Logradouros (3.241 Ruas) -->
+          <div class="layer-card" style="margin-bottom: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #475569;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Sistema Viário e Logradouros (3.241 Ruas)</span>
+                  <span class="layer-tag">4.868 Vias · Rodovias, Estradas do Vinho & Ruas Locais</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-red" title="Código de Trânsito Brasileiro">🚗 CTB (Lei 9.503/97)</span>
+                    <span class="badge-audit badge-orange" title="Hierarquia Viária, Recuos e Larguras Mínimas">📐 LC nº 40/2006</span>
+                    <span class="badge-audit badge-blue" title="OpenStreetMap / DER-SP / CCR ViaOeste">🗺️ Malha Viária 2026</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização do sistema viário e logradouros">
+                <input type="checkbox" id="toggle-logradouros" aria-label="Ativar ou desativar camada de logradouros">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-logradouros" class="opacity-range" min="0.1" max="1" step="0.05" value="0.85" aria-label="Ajustar opacidade do sistema viário">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida do Sistema Viário (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-logradouros">
+                <span class="legend-toggle-text">📊 Ver Hierarquia Viária</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-logradouros" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Rodovias Principais (SP-280 Castello Branco, SP-270 Raposo Tavares, SP-053 Quintino de Lima)"><span class="zone-dot" style="background: #DC2626;"></span> Rodovias Principais</span>
+                <span class="zone-chip" title="Avenidas Coletoras, Estradas Turísticas e Roteiro do Vinho"><span class="zone-dot" style="background: #D97706;"></span> Avenidas & Roteiro do Vinho</span>
+                <span class="zone-chip" title="Ruas Locais, Residenciais e Vias Secundárias"><span class="zone-dot" style="background: #64748B;"></span> Ruas Locais & Residenciais</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================================= -->
+          <!-- REVISÃO DO PLANO DIRETOR MUNICIPAL (2024–2026 / REVISÃO 05 - AGOSTO/2026) -->
+          <!-- ========================================================================= -->
+
+          <!-- Camada: Carta I - Macrozoneamento Municipal (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #E11D48;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #E11D48;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta I: Macrozoneamento Municipal (2026)</span>
+                  <span class="layer-tag">Revisão 05 (Agosto/2026) · 3 Macrozonas Estruturantes · Escala 1:25.000</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-red" title="Minuta de Revisão da Lei Complementar nº 39/2006 (Art. 49 e Anexo I)">🏛️ Minuta LC nº 39/2026</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                    <span class="badge-audit badge-blue" title="Departamento de Planejamento e Meio Ambiente">🏢 DPMA / PMS-Roque</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta I - Macrozoneamento Municipal 2026">
+                <input type="checkbox" id="toggle-carta-01-macrozoneamento-2026" aria-label="Ativar ou desativar Carta I Macrozoneamento Municipal 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-01-macrozoneamento-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta I">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta I -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-01">
+                <span class="legend-toggle-text">📊 Ver 3 Macrozonas</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-01" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Macrozona de Consolidação Urbana (Sede, Maylasky, São João Novo, Canguera)"><span class="zone-dot" style="background: #FF7F00;"></span> Consolidação Urbana</span>
+                <span class="zone-chip" title="Macrozona de Urbanização Específica (Turismo, Mananciais, Eixo Castello)"><span class="zone-dot" style="background: #007FFF;"></span> Urbanização Específica</span>
+                <span class="zone-chip" title="Macrozona Rural (Módulo INCRA 20.000m², Enogastronomia e Preservação)"><span class="zone-dot" style="background: #00FF00;"></span> Macrozona Rural</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta II - Zoneamentos da Macrozona de Urbanização Específica (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #007FFF;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #007FFF;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta II: ZUE - Urbanização Específica (2026)</span>
+                  <span class="layer-tag">153,33 km² Totais · 5 Zonas Periurbanas · Minuta LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-blue" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Arts. 66 a 100, Quadros I a IV)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-green" title="APA da Represa de Itupararanga (Lei Estadual 10.100/98)">💧 APA Itupararanga</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta II - Zoneamentos da Macrozona de Urbanização Específica">
+                <input type="checkbox" id="toggle-carta-02-zue-2026" aria-label="Ativar ou desativar Carta II ZUE 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-02-zue-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta II">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta II -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-02">
+                <span class="legend-toggle-text">📊 Ver 5 Zonas ZUE & Áreas Oficiais</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-02" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZUE – Chácaras em Manancial (49,19 km² · Lote mín 5.000m² · Frente 50m · TO 50% · TP 50%)"><span class="zone-dot" style="background: #007FFF;"></span> Chácaras em Manancial (49,19 km²)</span>
+                <span class="zone-chip" title="ZUE – Interesse Turístico (89,92 km² · Gabarito 12m-24m OODC · Mombaça Multifamiliar)"><span class="zone-dot" style="background: #FFCF3D;"></span> Interesse Turístico (89,92 km²)</span>
+                <span class="zone-chip" title="ZUE – Atividades Especiais Raposo Tavares (1,87 km² · Comércio e Serviços Rodoviários)"><span class="zone-dot" style="background: #7F00FF;"></span> Atividades Especiais Raposo (1,87 km²)</span>
+                <span class="zone-chip" title="ZUE – Ocupação Estratégica (7,58 km² · Eixo Castello / Catarina · Vedado Aterro/Cemitério)"><span class="zone-dot" style="background: #FF7FDF;"></span> Ocupação Estratégica (7,58 km²)</span>
+                <span class="zone-chip" title="ZUE – Desenvolvimento Econômico (4,77 km² · Indústria Limpa e Logística)"><span class="zone-dot" style="background: #FF0000;"></span> Desenv. Econômico (4,77 km²)</span>
+                <span class="zone-chip" title="Perímetro da APA de Itupararanga (Lei Estadual 10.100/98)"><span class="zone-dot" style="background: #EF4444; border: 1px dashed #fff;"></span> Perímetro APA Itupararanga</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta III - Zoneamentos da Macrozona de Consolidação Urbana (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #FF7F00;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #FF7F00;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta III: Consolidação Urbana - Geral (2026)</span>
+                  <span class="layer-tag">39,22 km² Totais · 4 Perímetros Urbanos · 6 Zonas · LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Arts. 101 a 150, Quadros V a IX)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-green" title="Zona Urbana de Preservação Ambiental (9,15 km²)">🌿 ZUPA (9,15 km²)</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta III - Zoneamentos da Macrozona de Consolidação Urbana">
+                <input type="checkbox" id="toggle-carta-03-consolidacao-urbana-2026" aria-label="Ativar ou desativar Carta III Consolidação Urbana 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-03-consolidacao-urbana-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta III">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta III -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-03">
+                <span class="legend-toggle-text">📊 Ver 6 Zonas Urbanas Consolidadas</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-03" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZUR – Baixa Densidade (6,31 km² · Lote mín 250m² · Frente 10m)"><span class="zone-dot" style="background: #FFFF80;"></span> ZUR Baixa Densidade (6,31 km²)</span>
+                <span class="zone-chip" title="ZUR – Média Densidade (18,88 km² · Gabarito até 30m em SJN)"><span class="zone-dot" style="background: #FF8080;"></span> ZUR Média Densidade (18,88 km²)</span>
+                <span class="zone-chip" title="ZUR – Alta Densidade (2,70 km² · Receptora de Potencial Construtivo)"><span class="zone-dot" style="background: #FF5522;"></span> ZUR Alta Densidade (2,70 km²)</span>
+                <span class="zone-chip" title="Zona Urbana Central (0,63 km² · Centro Histórico, Comércio e Outorga Onerosa)"><span class="zone-dot" style="background: #D29050;"></span> Urbana Central (0,63 km²)</span>
+                <span class="zone-chip" title="Zona Urbana Industrial (1,55 km² · Parques Industriais e Logística)"><span class="zone-dot" style="background: #DF00DF;"></span> Urbana Industrial (1,55 km²)</span>
+                <span class="zone-chip" title="Zona Urbana de Preservação Ambiental (9,15 km² · Emissora de Potencial Construtivo)"><span class="zone-dot" style="background: #80B000;"></span> Preservação - ZUPA (9,15 km²)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta IV - Zoneamentos da Macrozona de Consolidação Urbana: Sede (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #DDA56E;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #DDA56E;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta IV: Consolidação Urbana - Sede (2026)</span>
+                  <span class="layer-tag">Detalhamento Intraurbano (1:12.500) · Centro & Bairros Sede · LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Art. 101, I)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-blue" title="Zona Urbana Central e Bairros Históricos">🏛️ Centro Histórico & Brasital</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta IV - Consolidação Urbana Sede">
+                <input type="checkbox" id="toggle-carta-04-sede-2026" aria-label="Ativar ou desativar Carta IV Sede 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-04-sede-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta IV">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta IV -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-04">
+                <span class="legend-toggle-text">📊 Ver Zoneamento Intraurbano da Sede</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-04" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Zona Urbana Central (Centro Histórico, Comércio, IPTU progressivo)"><span class="zone-dot" style="background: #DDA56E;"></span> Zona Central</span>
+                <span class="zone-chip" title="ZUR – Baixa Densidade (Residencial horizontal · Lote mín 250m²)"><span class="zone-dot" style="background: #FFFF7F;"></span> ZUR Baixa Densidade</span>
+                <span class="zone-chip" title="ZUR – Média Densidade 1 (Vila Aguiar, Junqueira, Vila Nova, Marmeleiro)"><span class="zone-dot" style="background: #FF7F7F;"></span> ZUR Média Densidade 1</span>
+                <span class="zone-chip" title="ZUR – Alta Densidade (Eixos de transporte · Receptora de TPC)"><span class="zone-dot" style="background: #FF622E;"></span> ZUR Alta Densidade</span>
+                <span class="zone-chip" title="Zona Urbana Industrial (Eixo Ferroviário e Acessos)"><span class="zone-dot" style="background: #DD00DD;"></span> Urbana Industrial</span>
+                <span class="zone-chip" title="Zona Urbana de Preservação Ambiental (Mata da Câmara, Morros e Encostas)"><span class="zone-dot" style="background: #8AB800;"></span> Preservação - ZUPA</span>
+                <span class="zone-chip" title="Perímetro Sul da APA de Itupararanga"><span class="zone-dot" style="background: #EF4444; border: 1px dashed #fff;"></span> Perímetro APA Itupararanga</span>
+                <span class="zone-chip" title="Malha Ferroviária FEPASA"><span class="zone-dot" style="background: #8B4513;"></span> Linha Férrea</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta V - Zoneamentos da Macrozona de Consolidação Urbana: Maylasky (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #EF4444;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #EF4444;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta V: Consolidação Urbana - Maylasky (2026)</span>
+                  <span class="layer-tag">Detalhamento Intraurbano (1:12.500) · Polo Ferroviário & Bairros · LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Art. 101, II)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-blue" title="Polo Industrial e Ferroviário de Maylasky">🏭 Eixo Renê Benedito</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta V - Consolidação Urbana Maylasky">
+                <input type="checkbox" id="toggle-carta-05-maylasky-2026" aria-label="Ativar ou desativar Carta V Maylasky 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-05-maylasky-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta V">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta V -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-05">
+                <span class="legend-toggle-text">📊 Ver Zoneamento de Maylasky</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-05" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZUR – Baixa Densidade (Residencial horizontal · Lote mín 250m²)"><span class="zone-dot" style="background: #FFFF7F;"></span> ZUR Baixa Densidade</span>
+                <span class="zone-chip" title="ZUR – Média Densidade 2 (Gabarito máx 12m · Térreo + 3 pavimentos)"><span class="zone-dot" style="background: #FF7F7F;"></span> ZUR Média Densidade 2</span>
+                <span class="zone-chip" title="Zona Urbana Industrial (Maylasky - Eixo Ferroviário / Logística)"><span class="zone-dot" style="background: #DD00DD;"></span> Urbana Industrial</span>
+                <span class="zone-chip" title="Zona Urbana de Preservação Ambiental (Córrego Maylasky / Encostas)"><span class="zone-dot" style="background: #8AB800;"></span> Preservação - ZUPA</span>
+                <span class="zone-chip" title="Malha Ferroviária FEPASA"><span class="zone-dot" style="background: #8B4513;"></span> Linha Férrea</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta VI - Zoneamentos da Macrozona de Consolidação Urbana: São João Novo (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #06B6D4;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #06B6D4;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta VI: Consolidação Urbana - São João Novo (2026)</span>
+                  <span class="layer-tag">Detalhamento Intraurbano (1:12.500) · Interface Aeroporto Catarina · LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Art. 101, III)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-blue" title="Interface com Aeroporto Executivo Internacional Catarina (SBJH)">✈️ Aeroporto Catarina</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta VI - Consolidação Urbana São João Novo">
+                <input type="checkbox" id="toggle-carta-06-sao-joao-novo-2026" aria-label="Ativar ou desativar Carta VI São João Novo 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-06-sao-joao-novo-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta VI">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta VI -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-06">
+                <span class="legend-toggle-text">📊 Ver Zoneamento de São João Novo</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-06" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZUR – Baixa Densidade (Chácaras e núcleos residenciais unifamiliares)"><span class="zone-dot" style="background: #FFFF7F;"></span> ZUR Baixa Densidade</span>
+                <span class="zone-chip" title="ZUR – Média Densidade 2 (Núcleo distrital central · Gabarito 12m)"><span class="zone-dot" style="background: #FF7F7F;"></span> ZUR Média Densidade 2</span>
+                <span class="zone-chip" title="Zona Urbana de Preservação Ambiental (Matas ciliares e encostas)"><span class="zone-dot" style="background: #8AB800;"></span> Preservação - ZUPA</span>
+                <span class="zone-chip" title="Interface com Plano Básico de Zona de Proteção do Aeroporto Catarina (SBJH)"><span class="zone-dot" style="background: #EF4444; border: 1px dashed #fff;"></span> Interface Aeroporto Catarina</span>
+                <span class="zone-chip" title="Malha Ferroviária FEPASA"><span class="zone-dot" style="background: #8B4513;"></span> Linha Férrea</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta VII - Zoneamentos da Macrozona de Consolidação Urbana: Canguera (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #10B981;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #10B981;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta VII: Consolidação Urbana - Canguera (2026)</span>
+                  <span class="layer-tag">Detalhamento Intraurbano (1:12.500) · Polo Enoturístico & APA · LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Art. 101, IV)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-blue" title="Estrada do Vinho e Corredores Comerciais">🍷 Estrada do Vinho</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta VII - Consolidação Urbana Canguera">
+                <input type="checkbox" id="toggle-carta-07-canguera-2026" aria-label="Ativar ou desativar Carta VII Canguera 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-07-canguera-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta VII">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta VII -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-07">
+                <span class="legend-toggle-text">📊 Ver Zoneamento de Canguera</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-07" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZUR – Baixa Densidade (Residencial horizontal e chácaras enoturísticas)"><span class="zone-dot" style="background: #FFFF7F;"></span> ZUR Baixa Densidade</span>
+                <span class="zone-chip" title="ZUR – Média Densidade 2 (Núcleo central de Canguera · Gabarito 12m)"><span class="zone-dot" style="background: #FF7F7F;"></span> ZUR Média Densidade 2</span>
+                <span class="zone-chip" title="Zona Urbana de Preservação Ambiental (Mananciais de Itupararanga)"><span class="zone-dot" style="background: #8AB800;"></span> Preservação - ZUPA</span>
+                <span class="zone-chip" title="Corredores Comerciais e Gastronômicos (Estrada do Vinho / SP-077)"><span class="zone-dot" style="background: #F59E0B;"></span> Corredor Turístico</span>
+                <span class="zone-chip" title="Perímetro da APA da Represa de Itupararanga"><span class="zone-dot" style="background: #EF4444; border: 1px dashed #fff;"></span> APA Itupararanga</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta VIII - Corredores de Comércio, Serviços e Turismo (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #F59E0B;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #F59E0B;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta VIII: Corredores de Comércio, Serviços e Turismo (2026)</span>
+                  <span class="layer-tag">Eixos Comerciais & Rota do Vinho · Escala 1:25.000 · Arts. 151 a 165 LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Arts. 151 a 165)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-blue" title="Eixos Enoturísticos e Rodoviários">🍷 Rota do Vinho & Rodovias</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta VIII - Corredores Comerciais e Turísticos">
+                <input type="checkbox" id="toggle-carta-08-corredores-2026" aria-label="Ativar ou desativar Carta VIII 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-08-corredores-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta VIII">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta VIII -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-08">
+                <span class="legend-toggle-text">📊 Ver Corredores Comerciais e Turísticos</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-08" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Estrada do Vinho (Enoturismo, adegas, gastronomia)"><span class="zone-dot" style="background: #F59E0B;"></span> Estrada do Vinho</span>
+                <span class="zone-chip" title="Rodovia Raposo Tavares SP-270 (Eixo logístico e comercial)"><span class="zone-dot" style="background: #EF4444;"></span> Rod. Raposo Tavares</span>
+                <span class="zone-chip" title="Rodovia Quintino de Lima SP-077 (Conexão Ibiúna / Canguera)"><span class="zone-dot" style="background: #10B981;"></span> Rod. Quintino de Lima</span>
+                <span class="zone-chip" title="Rodovia Lívio Tagliassachi (Acesso à Castello Branco)"><span class="zone-dot" style="background: #3B82F6;"></span> Rod. Lívio Tagliassachi</span>
+                <span class="zone-chip" title="Rodovia Engº Renê Benedito da Silva SP-274 (Eixo Maylasky - Itapevi)"><span class="zone-dot" style="background: #8B5CF6;"></span> Rod. Renê Benedito</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta IX - Áreas de Especial Interesse (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #8B5CF6;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #8B5CF6;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta IX: Áreas de Especial Interesse - AEIS, AEIT, AEIU (2026)</span>
+                  <span class="layer-tag">Habitação Social, Turismo e Urbanismo · Escala 1:25.000 · Arts. 166 a 180 LC 40/2026</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Minuta de Revisão da Lei Complementar nº 40/2006 (Arts. 166 a 180)">📜 Minuta LC nº 40/2026</span>
+                    <span class="badge-audit badge-purple" title="Habitação de Interesse Social e Reurb">🏘️ AEIS 1, 2 e 3</span>
+                    <span class="badge-audit badge-blue" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta IX - Áreas de Especial Interesse">
+                <input type="checkbox" id="toggle-carta-09-aeis-2026" aria-label="Ativar ou desativar Carta IX 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-09-aeis-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta IX">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta IX -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-09">
+                <span class="legend-toggle-text">📊 Ver AEIS, AEIT e AEIU</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-09" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="AEIS 1 – Terrenos públicos/privados para produção prioritária de Habitação de Interesse Social"><span class="zone-dot" style="background: #EC4899;"></span> AEIS 1 (HIS Nova)</span>
+                <span class="zone-chip" title="AEIS 2 – Loteamentos consolidados ou irregulares para Regularização Fundiária (Reurb-S)"><span class="zone-dot" style="background: #F43F5E;"></span> AEIS 2 (Reurb)</span>
+                <span class="zone-chip" title="AEIS 3 – Vazios urbanos dotados de infraestrutura para adensamento social"><span class="zone-dot" style="background: #FB7185;"></span> AEIS 3 (Vazios Urbanos)</span>
+                <span class="zone-chip" title="AEIT – Áreas de Especial Interesse Turístico"><span class="zone-dot" style="background: #FBBF24;"></span> AEIT (Turístico)</span>
+                <span class="zone-chip" title="AEIU – Áreas de Especial Interesse Urbanístico (Grandes Projetos)"><span class="zone-dot" style="background: #8B5CF6;"></span> AEIU (Urbanístico)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta X - Propostas do Sistema Viário e Drenagem: Sede (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #3B82F6;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #3B82F6;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta X: Sistema Viário e Drenagem - Sede (2026)</span>
+                  <span class="layer-tag">Hierarquia Viária, Mobilidade & Bacias de Retenção · Escala 1:12.500</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-blue" title="Plano de Mobilidade e Hierarquia Viária">🚗 Sistema Viário</span>
+                    <span class="badge-audit badge-cyan" title="Bacias de Retenção e Calhas de Macrodrenagem">🌊 Macrodrenagem</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta X - Viário e Drenagem Sede">
+                <input type="checkbox" id="toggle-carta-10-viario-sede-2026" aria-label="Ativar ou desativar Carta X 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-10-viario-sede-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta X">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta X -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-10">
+                <span class="legend-toggle-text">📊 Ver Viário e Drenagem da Sede</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-10" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Vias Arteriais Estruturantes"><span class="zone-dot" style="background: #DC2626;"></span> Vias Arteriais</span>
+                <span class="zone-chip" title="Vias Coletoras Principais"><span class="zone-dot" style="background: #F59E0B;"></span> Vias Coletoras</span>
+                <span class="zone-chip" title="Anéis e Contornos Viários Propostos"><span class="zone-dot" style="background: #2563EB;"></span> Anel Viário Sede</span>
+                <span class="zone-chip" title="Ciclovias e Ciclofaixas Urbanas"><span class="zone-dot" style="background: #10B981;"></span> Malha Cicloviária</span>
+                <span class="zone-chip" title="Bacias de Retenção de Águas Pluviais (Piscinões)"><span class="zone-dot" style="background: #06B6D4;"></span> Bacias de Retenção</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta XI - Propostas do Sistema Viário e Drenagem: Maylasky (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #0284C7;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #0284C7;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta XI: Sistema Viário e Drenagem - Maylasky (2026)</span>
+                  <span class="layer-tag">Diretrizes Viárias & Drenagem Distrital · Escala 1:12.500</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-blue" title="Diretrizes do Sistema Viário Distrital">🚗 Eixo Renê Benedito</span>
+                    <span class="badge-audit badge-cyan" title="Drenagem do Córrego Maylasky">🌊 Drenagem Maylasky</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta XI - Viário e Drenagem Maylasky">
+                <input type="checkbox" id="toggle-carta-11-viario-maylasky-2026" aria-label="Ativar ou desativar Carta XI 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-11-viario-maylasky-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta XI">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta XI -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-11">
+                <span class="legend-toggle-text">📊 Ver Viário e Drenagem de Maylasky</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-11" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Rodovia Engº Renê Benedito da Silva SP-274"><span class="zone-dot" style="background: #DC2626;"></span> Rod. Renê Benedito</span>
+                <span class="zone-chip" title="Transposições e Passagens Ferroviárias em Desnível"><span class="zone-dot" style="background: #F59E0B;"></span> Passagens Ferroviárias</span>
+                <span class="zone-chip" title="Calhas de Macrodrenagem do Córrego Maylasky"><span class="zone-dot" style="background: #06B6D4;"></span> Calha Hídrica Maylasky</span>
+                <span class="zone-chip" title="Acessos aos Loteamentos e Bairros"><span class="zone-dot" style="background: #10B981;"></span> Acessos Coletores</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta XII - Propostas do Sistema Viário e Drenagem: Canguera (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #0D9488;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #0D9488;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta XII: Sistema Viário e Drenagem - Canguera (2026)</span>
+                  <span class="layer-tag">Mobilidade Enoturística & Drenagem de Mananciais · Escala 1:12.500</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-orange" title="Estrada do Vinho e Acessos Turísticos">🍷 Estrada do Vinho</span>
+                    <span class="badge-audit badge-cyan" title="Drenagem na Bacia da Represa de Itupararanga">🌊 Bacia Itupararanga</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta XII - Viário e Drenagem Canguera">
+                <input type="checkbox" id="toggle-carta-12-viario-canguera-2026" aria-label="Ativar ou desativar Carta XII 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-12-viario-canguera-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da Carta XII">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta XII -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-12">
+                <span class="legend-toggle-text">📊 Ver Viário e Drenagem de Canguera</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-12" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Estrada do Vinho (Eixo Turístico Estruturador)"><span class="zone-dot" style="background: #F59E0B;"></span> Estrada do Vinho</span>
+                <span class="zone-chip" title="Rodovia Quintino de Lima SP-077"><span class="zone-dot" style="background: #DC2626;"></span> Rod. Quintino de Lima</span>
+                <span class="zone-chip" title="Ciclovia Rota do Vinho"><span class="zone-dot" style="background: #10B981;"></span> Ciclovia Turística</span>
+                <span class="zone-chip" title="Canais de Drenagem e Preservação de Mananciais"><span class="zone-dot" style="background: #06B6D4;"></span> Drenagem Mananciais</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada: Carta XIII - Intervenções e Obras Prioritárias SRQ-01 a SRQ-22 (Plano Diretor 2026) -->
+          <div class="layer-card" style="margin-bottom: 10px; border-left: 3px solid #DC2626;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #DC2626;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Carta XIII: Obras Estruturantes Prioritárias SRQ-01 a SRQ-22 (2026)</span>
+                  <span class="layer-tag">22 Obras Prioritárias · Áreas de Risco, Contenções & Pontes · Escala 1:25.000</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-red" title="Programa de Obras Prioritárias da Minuta de Revisão 2026">🏗️ SRQ-01 a SRQ-22</span>
+                    <span class="badge-audit badge-orange" title="Áreas de Risco Geológico e Hidrológico (Lei 12.608/12)">🛡️ Defesa Civil / Risco</span>
+                    <span class="badge-audit badge-purple" title="Responsável Técnico: Eng. Civil David de Mello Berger (CREA 5070025188)">📐 Eng. David Berger</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Carta XIII - Obras Prioritárias">
+                <input type="checkbox" id="toggle-carta-13-obras-prioritarias-2026" aria-label="Ativar ou desativar Carta XIII 2026">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-carta-13-obras-prioritarias-2026" class="opacity-range" min="0.1" max="1" step="0.05" value="0.80" aria-label="Ajustar opacidade da Carta XIII">
+              </div>
+            </div>
+
+            <!-- Legenda da Carta XIII -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-carta-13">
+                <span class="legend-toggle-text">📊 Ver 22 Obras Estruturantes SRQ</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-carta-13" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Obras de Drenagem e Desassoreamento de Rios"><span class="zone-dot" style="background: #0284C7;"></span> Drenagem & Desassoreamento</span>
+                <span class="zone-chip" title="Contenção de Encostas e Áreas de Risco Geológico"><span class="zone-dot" style="background: #DC2626;"></span> Contenção Encostas (Risco)</span>
+                <span class="zone-chip" title="Novas Pontes, Viadutos e Travessias"><span class="zone-dot" style="background: #F59E0B;"></span> Pontes e Travessias</span>
+                <span class="zone-chip" title="Prolongamentos e Duplicações de Acessos Viários"><span class="zone-dot" style="background: #10B981;"></span> Duplicações Viárias</span>
+                <span class="zone-chip" title="Canalizações e Piscinões de Retenção Pluvial"><span class="zone-dot" style="background: #8B5CF6;"></span> Canalizações & Piscinões</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 1: Zoneamento Oficial Homologado -->
+          <div class="layer-card" style="margin-bottom: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #7c3aed;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Zoneamento Homologado (PMD 2006)</span>
+                  <span class="layer-tag">31 Zonas Territoriais · 14.974 Vértices</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                    <span class="badge-audit badge-purple" title="Plano Diretor Estratégico Municipal">🏛️ LC nº 39/2006 (Plano Diretor)</span>
+                    <span class="badge-audit badge-purple" title="Lei de Uso, Ocupação e Parcelamento do Solo">📜 LC nº 40/2006 (Uso do Solo)</span>
+                    <span class="badge-audit badge-purple" title="Código de Obras e Edificações">🏗️ LC nº 41/2006 (Obras)</span>
+                    <span class="badge-audit badge-blue" title="Estatuto da Cidade (Diretrizes Gerais)">⚖️ Estatuto da Cidade</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização do zoneamento homologado">
+                <input type="checkbox" id="toggle-zoneamento" checked aria-label="Ativar ou desativar camada de zoneamento homologado">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-zoneamento" class="opacity-range" min="0.1" max="1" step="0.05" value="0.55" aria-label="Ajustar opacidade da camada de zoneamento homologado">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida das Zonas (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-zoneamento">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-zoneamento" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip"><span class="zone-dot" style="background: #7c3aed;"></span> Central</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #dc2626;"></span> Dens. Alta</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #ea580c;"></span> Dens. Média</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #ca8a04;"></span> Dens. Baixa</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #2563eb;"></span> Consolidação</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #059669;"></span> ZUE Turístico</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #d97706;"></span> ZUE Econômico</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #0891b2;"></span> ZUCAer</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #475569;"></span> Industrial</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #15803d;"></span> Preservação</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #65a30d;"></span> Rural</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 2: Minuta Prévia do Zoneamento (Estudo Técnico PMD 2006) -->
+          <div class="layer-card">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #007fff;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Minuta Prévia (Estudo Técnico PMD 2006)</span>
+                  <span class="layer-tag">33 Zonas/Polígonos · 14.638 Vértices · Áreas e Perímetros</span>
+                  <span class="badge-audit badge-blue">📐 Estudo Técnico / Minuta Original</span>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da minuta de zoneamento">
+                <input type="checkbox" id="toggle-minuta-zoneamento" aria-label="Ativar ou desativar camada da minuta de zoneamento">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-minuta-zoneamento" class="opacity-range" min="0.1" max="1" step="0.05" value="0.50" aria-label="Ajustar opacidade da camada da minuta de zoneamento">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida das Zonas da Minuta (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-minuta-zoneamento">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-minuta-zoneamento" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip"><span class="zone-dot" style="background: #007fff;"></span> ZUE Manancial</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #fece3d;"></span> ZUE Turístico</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #e31a1c;"></span> ZUR Alta</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #ff7f7f;"></span> ZUR Média</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #fbfb7d;"></span> ZUR Baixa</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #729900;"></span> ZUPA Ambiental</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #ff0000;"></span> ZUE Econômica</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #ff7fdf;"></span> ZUE Estratégica</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #b05c08;"></span> Central</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #7c39c4;"></span> Industrial</span>
+                <span class="zone-chip"><span class="zone-dot" style="background: #00ff00;"></span> Rural</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 3: Declividade do Terreno (Anexo 4.3.3-1 - PDA 2019 / IGC 1978) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #FF5500;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Declividade do Terreno (Anexo 4.3.3-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · Escala 1:50.000 · 26.975 Polígonos</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-orange" title="Metodologia Pedológica Lepsch (1983) / Embrapa">📐 Lepsch / Embrapa</span>
+                    <span class="badge-audit badge-red" title="Lei Federal 6.766/79 Art. 3º e LC 40/2006 Art. 13 - Proibido parcelamento > 30%">⚠️ Vedação >30% (Lei 6.766 e LC 40/06)</span>
+                    <span class="badge-audit badge-blue" title="Política Nacional de Proteção e Defesa Civil">🛡️ Risco Geotécnico (Lei 12.608/12)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da declividade do terreno">
+                <input type="checkbox" id="toggle-declividade" aria-label="Ativar ou desativar camada de declividade">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-declividade" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada de declividade">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida das Classes de Declividade (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-declividade">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-declividade" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="0 a 3% - Apto sem restrições"><span class="zone-dot" style="background: #FFFF73;"></span> Plano (0-3%)</span>
+                <span class="zone-chip" title="3 a 8% - Apto com controle padrão de escoamento"><span class="zone-dot" style="background: #FFFF00;"></span> Suave (3-8%)</span>
+                <span class="zone-chip" title="8 a 20% - Limite viário 15% (LC 40/2006 Art. 32)"><span class="zone-dot" style="background: #FFAA00;"></span> Ondulado (8-20%)</span>
+                <span class="zone-chip" title="20 a 45% - Restrição Severa (Proibido parcelamento > 30%)"><span class="zone-dot" style="background: #FF5500;"></span> Forte Ondulado (20-45%)</span>
+                <span class="zone-chip" title="45 a 75% - Risco Geotécnico / Encostas > 45° (100%) são APP"><span class="zone-dot" style="background: #E60000;"></span> Montanhoso (> 45%)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 4: MDT - Relevo e Hipsometria (Anexo 4.3.2-2 - PDA 2019 / IGC 1978) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #7AAB00;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">MDT - Hipsometria (Anexo 4.3.2-2)</span>
+                  <span class="layer-tag">Vetor Contínuo SIRGAS 2000 · 630m a 1.125m · 129 Manchas Orgânicas</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Hipsometria Contínua e Fundos de Vale PDA 2019">⛰️ Hipsometria PDA 2019</span>
+                    <span class="badge-audit badge-purple" title="Jurisprudência Vinculante do STF e Lei 12.651/12 Art. 4º, IX">🏛️ APP Topo de Morro (STF)</span>
+                    <span class="badge-audit badge-blue" title="Patrimônio Paisagístico e Silhueta dos Morros (Morro do Saboó e Cruzeiro)">🌄 Morros de São Roque (LC 39/06)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização do modelo digital de terreno">
+                <input type="checkbox" id="toggle-mdt" aria-label="Ativar ou desativar camada do MDT">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-mdt" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada do MDT">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida das Faixas de Altitude (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-mdt">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-mdt" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="630 a 760m - Várzeas e Fundos de Vale (APP Fluvial)"><span class="zone-dot" style="background: #006100;"></span> 630-760 m</span>
+                <span class="zone-chip" title="760 a 830m - Malha Urbana Central e Bairros"><span class="zone-dot" style="background: #7AAB00;"></span> 760-830 m</span>
+                <span class="zone-chip" title="830 a 900m - Platôs e Divisores de Sub-bacias"><span class="zone-dot" style="background: #FFFF00;"></span> 830-900 m</span>
+                <span class="zone-chip" title="900 a 970m - Altas Vertentes Serranas"><span class="zone-dot" style="background: #FF9900;"></span> 900-970 m</span>
+                <span class="zone-chip" title="970 a 1.125m - Cristas e Morro do Saboó (APP Topo de Morro)"><span class="zone-dot" style="background: #FF2200;"></span> 970-1.125 m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 5: Hidrografia e Corpos Hídricos (Anexo 4.3.7-1 - PDA 2019 / IGC 1978 / SABESP) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #00A2E8;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Hidrografia e Represas (Anexo 4.3.7-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 972 km de Rios · 2.355 ha de Represas</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Faixas Marginais de 30m a 100m (Lei Federal 12.651/12 e Lei 6.766/79)">💧 APP Hídrica (Lei 12.651/12)</span>
+                    <span class="badge-audit badge-purple" title="Área de Proteção Ambiental da Represa de Itupararanga (Lei Estadual 11.579/03 e Lei 9.866/97)">🌊 APA Itupararanga (Lei 11.579/03)</span>
+                    <span class="badge-audit badge-blue" title="Zonas de Proteção aos Mananciais Municipais">🛡️ Mananciais (LC 39/06 Arts. 60-64)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da hidrografia e represas">
+                <input type="checkbox" id="toggle-hidrografia" aria-label="Ativar ou desativar camada de hidrografia">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-hidrografia" class="opacity-range" min="0.1" max="1" step="0.05" value="0.85" aria-label="Ajustar opacidade da camada de hidrografia">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Hidrografia (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-hidrografia">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-hidrografia" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Córrego / Drenagem Natural (APP de 30 metros)"><span class="zone-dot" style="background: #00B0FF;"></span> Córregos & Afluentes (APP 30m)</span>
+                <span class="zone-chip" title="Rio Principal (Guaçu, Carambeí, Saboó - APP 30m a 50m)"><span class="zone-dot" style="background: #0055D4;"></span> Rios Principais (Guaçu/Carambeí)</span>
+                <span class="zone-chip" title="Represas, Lagos e Açudes (APP de 30m a 100m no entorno)"><span class="zone-dot" style="background: #00A2E8;"></span> Represas & Lagos (APP 30-100m)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 6: Compartimentos Geomorfológicos (Anexo 4.3.4-1 - PDA 2019 / Ross & Moroz 1997) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #FFAA00;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Compartimentos Geomorfológicos (Anexo 4.3.4-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 3 Unidades Morfoesculturais (Ross & Moroz)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Unidades Morfoesculturais e Metodologia Ross & Moroz (1997)">⛰️ Ross & Moroz 1997</span>
+                    <span class="badge-audit badge-purple" title="Plano Diretor e Uso do Solo - Aptidão do Meio Físico e Parcelamento">🏛️ LCs 39/06 & 40/06</span>
+                    <span class="badge-audit badge-blue" title="Carta Geotécnica IPT e Defesa Civil (Lei Federal 12.608/12 e Lei 6.766/79)">🛡️ Geotecnia (Lei 12.608/12)</span>
+                    <span class="badge-audit badge-orange" title="APA da Represa de Itupararanga (Lei Estadual 11.579/03) e Proteção de Cristas (STF)">🌊 APA Itupararanga & STF</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização dos compartimentos geomorfológicos">
+                <input type="checkbox" id="toggle-geomorfologico" aria-label="Ativar ou desativar camada geomorfológica">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-geomorfologico" class="opacity-range" min="0.1" max="1" step="0.05" value="0.60" aria-label="Ajustar opacidade da camada geomorfológica">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Geomorfologia (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-geomorfologico">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-geomorfologico" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Planalto Paulistano / Alto Tietê (Colinas amplas e topos aplainados)"><span class="zone-dot" style="background: #FF73DF;"></span> Planalto Paulistano / Alto Tietê</span>
+                <span class="zone-chip" title="Planalto de Ibiúna / São Roque (Relevo ondulado a forte ondulado, maciço cristalino)"><span class="zone-dot" style="background: #FFAA00;"></span> Planalto de Ibiúna / São Roque</span>
+                <span class="zone-chip" title="Planalto de Jundiaí (Serras e cristas estruturais quartzíticas - Morro do Saboó)"><span class="zone-dot" style="background: #AAFF00;"></span> Planalto de Jundiaí</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 7: Unidades Geológicas e Substrato Rochoso (Anexo 4.3.5-1 - PDA 2019 / CPRM 2006) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #CDAA66;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Geologia e Substrato Rochoso (Anexo 4.3.5-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 7 Unidades Litoestratigráficas (CPRM 2006)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-orange" title="Serviço Geológico do Brasil / CPRM (2006) e IPT">⛏️ CPRM / SGB 2006</span>
+                    <span class="badge-audit badge-purple" title="Plano Diretor, Uso do Solo e Código de Obras (Sondagens e Fundações)">🏛️ LCs 39, 40 e 41/06</span>
+                    <span class="badge-audit badge-blue" title="Política Nacional de Defesa Civil e Lei Lehmann (Art. 3º)">🛡️ Geotecnia (Lei 12.608/12 e Lei 6.766/79)</span>
+                    <span class="badge-audit badge-green" title="APA Itupararanga (Lei Estadual 11.579/03) - Proteção de Mananciais no Granito Ibiúna">🌊 APA Itupararanga</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização das unidades geológicas">
+                <input type="checkbox" id="toggle-geologia" aria-label="Ativar ou desativar camada de geologia">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-geologia" class="opacity-range" min="0.1" max="1" step="0.05" value="0.60" aria-label="Ajustar opacidade da camada de geologia">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Geologia (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-geologia">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-geologia" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Granito São Roque (NP3sγ1I - 10.199 ha)"><span class="zone-dot" style="background: #FF7F7F;"></span> Granito São Roque</span>
+                <span class="zone-chip" title="Granito Ibiúna (NP3pγ1I - 6.472 ha)"><span class="zone-dot" style="background: #E600A9;"></span> Granito Ibiúna</span>
+                <span class="zone-chip" title="Grupo Votuverava - Unidade Terrígena (MP1vot - 6.054 ha)"><span class="zone-dot" style="background: #D79E9E;"></span> Grupo Votuverava</span>
+                <span class="zone-chip" title="Grupo Serra do Itaberaba (MP2si - 2.304 ha)"><span class="zone-dot" style="background: #897044;"></span> Gr. Serra do Itaberaba</span>
+                <span class="zone-chip" title="Grupo São Roque - Fm. Estrada dos Romeiros (NP3srer - 2.148 ha)"><span class="zone-dot" style="background: #CDAA66;"></span> Fm. Estrada dos Romeiros</span>
+                <span class="zone-chip" title="Grupo São Roque - Fm. Piragibu (NP3srpi - 2.044 ha)"><span class="zone-dot" style="background: #728944;"></span> Fm. Piragibu</span>
+                <span class="zone-chip" title="Granito Itapevi (NP3pγ1 - 1.482 ha)"><span class="zone-dot" style="background: #FF5500;"></span> Granito Itapevi</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 8: Fragilidade Potencial e Vulnerabilidade à Erosão (Anexo 7.3.1-1 - PDA 2019 / Ross 1994) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #FF0000;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Fragilidade Potencial e Erosão (Anexo 7.3.1-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 5 Classes Morfodinâmicas (Ross 1994 / PDA 2019)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-orange" title="Metodologia Ross (1994) e Crepani et al. (2008)">⛰️ Ross 1994 / PDA</span>
+                    <span class="badge-audit badge-purple" title="Plano Diretor, Uso do Solo e Código de Obras (Manejo de Encostas e Contenção)">🏛️ LCs 39, 40 e 41/06</span>
+                    <span class="badge-audit badge-blue" title="Política Nacional de Defesa Civil e Lei Lehmann (Art. 3º - Áreas com Declividade > 30%)">🛡️ Geotecnia (Lei 12.608/12 & 6.766/79)</span>
+                    <span class="badge-audit badge-green" title="Código Florestal (Lei 12.651/12) e STF ADPF 747/749 - Proteção de Encostas e APPs">💧 APPs & STF ADPF 747</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da fragilidade potencial e erosão">
+                <input type="checkbox" id="toggle-fragilidade-potencial" aria-label="Ativar ou desativar camada de fragilidade potencial">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-fragilidade-potencial" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada de fragilidade potencial">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Fragilidade Potencial (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-fragilidade">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-fragilidade" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Muito Fraca (Fundos de vale e planícies aluvionares - 3.292 ha / 10,7%)"><span class="zone-dot" style="background: #006100;"></span> Muito Fraca</span>
+                <span class="zone-chip" title="Fraca (Colinas e relevo suave com boa estabilidade - 6.045 ha / 19,6%)"><span class="zone-dot" style="background: #7AAB00;"></span> Fraca</span>
+                <span class="zone-chip" title="Média (Relevo ondulado dominante do município - 16.497 ha / 53,5%)"><span class="zone-dot" style="background: #FFFF00;"></span> Média</span>
+                <span class="zone-chip" title="Forte (Encostas íngremes e áreas de declividade elevada - 4.979 ha / 16,2%)"><span class="zone-dot" style="background: #FF0000;"></span> Forte</span>
+                <span class="zone-chip" title="Muito Forte (Escarpas rochosas e cristas de serras - 3,5 ha / 0,01%)"><span class="zone-dot" style="background: #A80000;"></span> Muito Forte</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 9: Solos e Unidades Pedológicas (Anexo 4.3.6-1 - PDA 2019 / IAC / EMBRAPA Solos) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #FFA77F;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Solos e Unidades Pedológicas (Anexo 4.3.6-1)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 5 Unidades Pedológicas (IAC 1999 / EMBRAPA)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-orange" title="Metodologia IAC (1999) e EMBRAPA Solos / SiBCS">🌱 IAC 1999 / EMBRAPA</span>
+                    <span class="badge-audit badge-purple" title="Plano Diretor, Uso do Solo e Código de Obras (Sondagem SPT e Fundações)">🏛️ LCs 39, 40 e 41/06 (SPT)</span>
+                    <span class="badge-audit badge-green" title="APA da Represa de Itupararanga (Lei Estadual 11.579/03) - Infiltração em Latossolos">🌊 APA Itupararanga</span>
+                    <span class="badge-audit badge-blue" title="Parcelamento do Solo (Lei Lehmann 6.766/79) e Prevenção de Desastres (Lei 12.608/12)">🛡️ Lei 6.766/79 & 12.608/12</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização dos solos e unidades pedológicas">
+                <input type="checkbox" id="toggle-pedologico" aria-label="Ativar ou desativar camada pedológica">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-pedologico" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada pedológica">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Pedologia (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-pedologico">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-pedologico" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="PVA19 · Argissolos Vermelho-Amarelos A moderado (15.456 ha / 50,4%)"><span class="zone-dot" style="background: #FFA77F;"></span> PVA19 · Argissolos A mod.</span>
+                <span class="zone-chip" title="LVA17 · Latossolos Vermelho-Amarelos Distróficos (7.209 ha / 23,5%)"><span class="zone-dot" style="background: #FFEBBE;"></span> LVA17 · Latossolos LVA</span>
+                <span class="zone-chip" title="PVA41 · Argissolos + Cambissolos Háplicos (4.682 ha / 15,3%)"><span class="zone-dot" style="background: #FF7F50;"></span> PVA41 · Argissolo + Camb.</span>
+                <span class="zone-chip" title="PVA46 · Argissolos + Cambissolos Tb (2.275 ha / 7,4%)"><span class="zone-dot" style="background: #FF8C69;"></span> PVA46 · Argissolo Ondulado</span>
+                <span class="zone-chip" title="PVA55 · Argissolos Fase Rochosa + Latossolos (1.073 ha / 3,5%)"><span class="zone-dot" style="background: #E97451;"></span> PVA55 · Argissolo Rochoso</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 10: Zoneamento Ambiental (PDA 2019 - Anexo 8.3.1-1) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #4CE600;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Zoneamento Ambiental (PDA 2019)</span>
+                  <span class="layer-tag">Vetor Nativo SIRGAS 2000 · 9 Zonas e Subzonas (Anexo 8.3.1-1)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Macrozoneamento Ambiental Oficial do PDA 2019">🌿 PDA 2019 (Anexo 8.3.1-1)</span>
+                    <span class="badge-audit badge-purple" title="Plano Diretor, Uso do Solo e Código de Obras (Condicionantes Ambientais)">🏛️ LCs 39, 40 e 41/06</span>
+                    <span class="badge-audit badge-blue" title="APA da Represa de Itupararanga (Lei Estadual 11.579/03) - Proteção Hídrica">🌊 APA Itupararanga</span>
+                    <span class="badge-audit badge-orange" title="Lei da Mata Atlântica (Lei 11.428/06) e Lei Lehmann (Lei 6.766/79)">🛡️ Mata Atlântica & 6.766/79</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização do zoneamento ambiental do PDA 2019">
+                <input type="checkbox" id="toggle-zoneamento-ambiental-pda2019" aria-label="Ativar ou desativar camada de zoneamento ambiental">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-zoneamento-ambiental-pda2019" class="opacity-range" min="0.1" max="1" step="0.05" value="0.65" aria-label="Ajustar opacidade da camada de zoneamento ambiental">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida do Zoneamento Ambiental (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-zoneamento-ambiental">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-zoneamento-ambiental" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="ZDES_CB · Subzona de Desenvolvimento Socioeconômico Castelo Branco (1.638 ha / 5,3%)"><span class="zone-dot" style="background: #CA7AF5;"></span> Castelo Branco</span>
+                <span class="zone-chip" title="ZDES_SA · Subzona de Desenvolvimento Socioambiental (3.441 ha / 11,2%)"><span class="zone-dot" style="background: #E8BEFF;"></span> Socioambiental</span>
+                <span class="zone-chip" title="ZPBIO · Zona Prioritária de Proteção à Biodiversidade (3.106 ha / 10,1%)"><span class="zone-dot" style="background: #4CE600;"></span> Biodiversidade</span>
+                <span class="zone-chip" title="ZPED_ERO · Subzona Especial para Controle de Processos Erosivos (7.414 ha / 24,1%)"><span class="zone-dot" style="background: #FFAA00;"></span> Controle Erosivo</span>
+                <span class="zone-chip" title="ZPED_ESCO · Subzona Especial de Controle Escoamento Pluvial (5.965 ha / 19,4%)"><span class="zone-dot" style="background: #FFFF00;"></span> Controle Pluvial</span>
+                <span class="zone-chip" title="ZPURB · Zona Prioritária de Gestão aos Processos de Urbanização (2.826 ha / 9,2%)"><span class="zone-dot" style="background: #FF7F7F;"></span> Urbanização</span>
+                <span class="zone-chip" title="ZPHID_SEN · Subzona de Áreas Hidrologicamente Sensíveis (1.468 ha / 4,8%)"><span class="zone-dot" style="background: #004DA8;"></span> Hidro. Sensíveis</span>
+                <span class="zone-chip" title="ZPHID_RUR · Subzona de Manancial em Áreas Rurais (3.250 ha / 10,6%)"><span class="zone-dot" style="background: #00C5FF;"></span> Manancial Rural</span>
+                <span class="zone-chip" title="ZPHID_INT · Subzona de Manancial em Usos Intensivos ou Urbanizados (1.623 ha / 5,3%)"><span class="zone-dot" style="background: #73DFFF;"></span> Manancial Intensivo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 11: Áreas Hidrologicamente Sensíveis - AHS (PDA 2019 - Anexo 4.2.5.1-1) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #A80084;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Áreas Hidrologicamente Sensíveis (AHS - PDA 2019)</span>
+                  <span class="layer-tag">Anexo 4.2.5.1-1 · 7.514,71 ha (24,48% de São Roque) · APPs & Várzeas</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Código Florestal: APPs de nascentes (50m) e faixas marginais de cursos d'água (30m a 100m)">💧 Código Florestal (Lei 12.651/12)</span>
+                    <span class="badge-audit badge-purple" title="Proteção aos Mananciais do Estado de SP (Lei Estadual nº 9.866/97)">🛡️ Mananciais (Lei 9.866/97)</span>
+                    <span class="badge-audit badge-blue" title="APA da Represa de Itupararanga (Lei Estadual nº 11.579/03)">🌊 APA Itupararanga</span>
+                    <span class="badge-audit badge-orange" title="Zonas de Proteção de Mananciais e Restrição Severa de Parcelamento">🏛️ LCs 39/06 & 40/06</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização das Áreas Hidrologicamente Sensíveis (AHS)">
+                <input type="checkbox" id="toggle-ahs" aria-label="Ativar ou desativar camada de Áreas Hidrologicamente Sensíveis">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-ahs" class="opacity-range" min="0.1" max="1" step="0.05" value="0.70" aria-label="Ajustar opacidade da camada de Áreas Hidrologicamente Sensíveis">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da AHS (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-ahs">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-ahs" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="AHS · Áreas Hidrologicamente Sensíveis: APPs Hídricas, Várzeas Aluviais e Recarga de Aquíferos (7.514,71 ha / 24,48%)"><span class="zone-dot" style="background: #A80084;"></span> AHS · Áreas Hidrologicamente Sensíveis (7.514,71 ha)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Camada 12: Vegetação Nativa Arbórea - Mata Atlântica (PDA 2019 - Anexo 5.3.2.1-1) -->
+          <div class="layer-card" style="margin-top: 10px;">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #267300;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Vegetação Nativa Arbórea (Mata Atlântica)</span>
+                  <span class="layer-tag">Anexo 5.3.2.1-1 · 15.613,05 ha (50,85% de São Roque) · Ecoturismo</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Proteção do Bioma Mata Atlântica e Vedação ao Corte de Maciços Nativos">🌳 Mata Atlântica (Lei 11.428/06)</span>
+                    <span class="badge-audit badge-purple" title="Regulamentação Federal dos Parâmetros e Estágios Sucessionais">📜 Dec. Federal 6.660/08</span>
+                    <span class="badge-audit badge-blue" title="APA da Represa de Itupararanga (Lei Estadual nº 11.579/03)">🌊 APA Itupararanga</span>
+                    <span class="badge-audit badge-orange" title="Sistema de Áreas Verdes e Plano Diretor de Turismo">🏛️ LC 39/06 & PDTur (LC 140/25)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Vegetação Nativa Arbórea">
+                <input type="checkbox" id="toggle-vegetacao-arborea" aria-label="Ativar ou desativar camada de Vegetação Nativa Arbórea">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-vegetacao-arborea" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da camada de Vegetação Nativa Arbórea">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da Vegetação Nativa (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-vegetacao-arborea">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-vegetacao-arborea" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="VN_AVANCADO_MEDIO · Estágio Avançado e Médio (15.145,72 ha / 49,33% do município)"><span class="zone-dot" style="background: #267300;"></span> Estágio Avançado/Médio (15.145 ha)</span>
+                <span class="zone-chip" title="VN_INICIAL · Estágio Inicial de Regeneração / Capoeira (467,33 ha / 1,52% do município)"><span class="zone-dot" style="background: #55FF00;"></span> Estágio Inicial (467 ha)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: Esfera Estadual -->
+        <section>
+          <div class="panel-section-title">2. Esfera Estadual (São Paulo)</div>
+
+          <!-- Camada Estadual 1: APA da Represa de Itupararanga (Lei Estadual nº 11.579/2003) -->
+          <div class="layer-card">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #0070FF; border: 2px dashed #E60000;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">APA da Represa de Itupararanga</span>
+                  <span class="layer-tag">Polígono Sul (10.805 ha / 35,2%) + Limite Norte (18,59 km)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-purple" title="Criação da APA da Represa de Itupararanga">🌊 Lei Estadual nº 11.579/03</span>
+                    <span class="badge-audit badge-blue" title="Aprovação do Plano de Manejo da APA">📜 Decreto nº 52.879/08</span>
+                    <span class="badge-audit badge-green" title="Proteção aos Mananciais no Plano Diretor">🏛️ LC 39/06 Arts. 60-64</span>
+                    <span class="badge-audit badge-orange" title="Fundação Florestal e SEMIL-SP">🛡️ Fundação Florestal</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da APA de Itupararanga (polígono e limite norte)">
+                <input type="checkbox" id="toggle-apa-itupararanga-limite" checked aria-label="Ativar ou desativar APA de Itupararanga">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-apa-itupararanga-limite" class="opacity-range" min="0.1" max="1" step="0.05" value="0.85" aria-label="Ajustar opacidade da camada da APA">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da APA (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-apa-itupararanga-limite">
+                <span class="legend-toggle-text">📊 Ver Legenda</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-apa-itupararanga-limite" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Polígono da APA em São Roque: 10.805,84 ha (35,19% do município)"><span class="zone-dot" style="background: #0070FF; border: 1px solid #E60000;"></span> Polígono APA (10.805 ha)</span>
+                <span class="zone-chip" title="Linha divisória de águas (18,59 km) estabelecida pela Lei Estadual 11.579/03"><span class="zone-dot" style="background: #E60000;"></span> Limite Norte Demarcado (18,59 km)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: Esfera Federal -->
+        <section>
+          <div class="panel-section-title">3. Esfera Federal</div>
+          
+          <!-- Camada Federal 1: Proteção Aeroportuária, Helipontos e TMA (DECEA / ANAC) -->
+          <div class="layer-card">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #EA580C; border: 1.5px solid #0284C7;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Proteção Aeroportuária e Helipontos (DECEA / ANAC)</span>
+                  <span class="layer-tag">Catarina (SBJH) · 3 Helipontos Homologados · Congonhas (SBSP 45km)</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-orange" title="Código Brasileiro de Aeronáutica (Arts. 43-47) - Servidão Federal">✈️ CBA (Lei 7.565/86)</span>
+                    <span class="badge-audit badge-purple" title="Instrução do Comando da Aeronáutica - Superfícies Limitadoras e Gabarito">📐 ICA 11-408 & RBAC 155</span>
+                    <span class="badge-audit badge-blue" title="Portarias DECEA / SYSAGA: 176/DGCEA, 394/ICA, 230/SAGA, 1465/SAGA, 28/ICA">📜 Portarias DECEA</span>
+                    <span class="badge-audit badge-green" title="Helipontos na Estrada do Vinho e Gabriel Piza">🚁 3 Helipontos Homologados</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da proteção aeroportuária, helipontos e espaço aéreo">
+                <input type="checkbox" id="toggle-zona-protecao-aeroportuaria-catarina" aria-label="Ativar ou desativar proteção aeroportuária e helipontos">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-zona-protecao-aeroportuaria-catarina" class="opacity-range" min="0.1" max="1" step="0.05" value="0.70" aria-label="Ajustar opacidade da camada de proteção aeroportuária">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida Aeroportuária (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-zona-protecao-aeroportuaria-catarina">
+                <span class="legend-toggle-text">📊 Ver Legenda Aeronáutica & Helipontos</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-zona-protecao-aeroportuaria-catarina" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Pista 13/31 do Aeroporto Executivo Internacional Catarina (2.470 m x 45 m)"><span class="zone-dot" style="background: #0284C7;"></span> Pista 13/31 (SBJH)</span>
+                <span class="zone-chip" title="Cone de aproximação, decolagem e transição (ICA 11-408) e Ruído (RBAC 161)"><span class="zone-dot" style="background: #EA580C;"></span> Cone de Proteção / SLO (SBJH)</span>
+                <span class="zone-chip" title="Piso de Toque (FATO/TLOF): Vila Don Patto (SWVD), Taxaquara (SIZT) e NÓR Hotel"><span class="zone-dot" style="background: #DC2626;"></span> Helipontos FATO (SWVD, SIZT, NÓR)</span>
+                <span class="zone-chip" title="Plano de Zona de Proteção de Helipontos - Rampa de Aproximação 1.000m (8% a 12,5%)"><span class="zone-dot" style="background: #F43F5E;"></span> PZPH Funil Aproximação (1.000m)</span>
+                <span class="zone-chip" title="Superfície Horizontal Externa de Congonhas (Portaria 28/ICA - Raio 45 km / TMA-SP - 10.603 ha)"><span class="zone-dot" style="background: #8B5CF6;"></span> Congonhas SHE (SBSP / 10.603 ha)</span>
+                <span class="zone-chip" title="Área de Segurança Aeroportuária - Raio de 20 km (Lei 12.725/12 - 21.648 ha em São Roque)"><span class="zone-dot" style="background: #F59E0B;"></span> ASA Raio 20 km (Risco Aviário)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção: Esfera Internacional e Macroregional (UNESCO) -->
+        <section>
+          <div class="panel-section-title">4. Esfera Internacional (UNESCO / Regional)</div>
+
+          <!-- Camada UNESCO: Reserva da Biosfera do Cinturão Verde (RBCV) -->
+          <div class="layer-card">
+            <div class="layer-card-top">
+              <div class="layer-info">
+                <div class="layer-bullet" style="background: #38A800; border: 1px dashed #0F172A;"></div>
+                <div class="layer-texts">
+                  <span class="layer-name">Reserva da Biosfera do Cinturão Verde (UNESCO)</span>
+                  <span class="layer-tag">Programa MaB · 73 Municípios · Zonas-Núcleo & Amortecimento</span>
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px;">
+                    <span class="badge-audit badge-green" title="Programa MaB UNESCO (1994) e Resolução 28 C/2.4 (1995)">🌐 UNESCO / MaB 1994</span>
+                    <span class="badge-audit badge-purple" title="Internalização das Reservas da Biosfera no Brasil (Art. 41 SNUC)">🏛️ SNUC (Lei 9.985/00 Art. 41)</span>
+                    <span class="badge-audit badge-blue" title="Conselho de Gestão da RBCV no Estado de São Paulo">📜 Dec. Estadual nº 47.094/02</span>
+                    <span class="badge-audit badge-orange" title="Parque Natural Municipal Mata da Câmara (Zona-Núcleo da UNESCO em São Roque)">🌳 Mata da Câmara (Lei 2.499/99)</span>
+                  </div>
+                </div>
+              </div>
+              <label class="switch" title="Alternar visualização da Reserva da Biosfera do Cinturão Verde da UNESCO">
+                <input type="checkbox" id="toggle-rbcv-cinturao-verde" aria-label="Ativar ou desativar camada da Reserva da Biosfera do Cinturão Verde">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="layer-controls">
+              <div class="opacity-box full-width">
+                <span class="opacity-label">Opacidade</span>
+                <input type="range" id="opacity-rbcv-cinturao-verde" class="opacity-range" min="0.1" max="1" step="0.05" value="0.75" aria-label="Ajustar opacidade da camada RBCV UNESCO">
+              </div>
+            </div>
+
+            <!-- Legenda Rápida da RBCV (Acordeão) -->
+            <div class="legend-accordion">
+              <button class="legend-toggle" type="button" aria-expanded="false" aria-controls="legend-rbcv-cinturao-verde">
+                <span class="legend-toggle-text">📊 Ver Legenda UNESCO</span>
+                <span class="legend-icon">▼</span>
+              </button>
+              <div id="legend-rbcv-cinturao-verde" class="zone-legend-grid" aria-hidden="true">
+                <span class="zone-chip" title="Zona-Núcleo da UNESCO (Proteção Integral Estrita / Parque Mata da Câmara em São Roque)"><span class="zone-dot" style="background: #38A800;"></span> Zonas-Núcleo (Proteção Integral)</span>
+                <span class="zone-chip" title="Limite Oficial Regional Homologado pela UNESCO abrangendo os 73 municípios paulistas"><span class="zone-dot" style="background: #0F172A; border: 1px dashed #FFFFFF;"></span> Limite Regional RBCV (73 Mun.)</span>
+                <span class="zone-chip" title="Zona de Amortecimento e Conectividade Ecológica (compreende a APA de Itupararanga)"><span class="zone-dot" style="background: #4CE600;"></span> Zona de Amortecimento (APA)</span>
+                <span class="zone-chip" title="Zona de Transição e Cooperação Econômica Sustentável"><span class="zone-dot" style="background: #FFAA00;"></span> Zona de Transição</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ABA 2: ROL DE LEIS & CONSULTA TERRITORIAL -->
+      <div id="tab-pane-leis" class="tab-pane" role="tabpanel" aria-label="Rol de Legislação e Consulta Territorial" style="display: none;">
+        
+        <!-- Campo de Busca no Rol de Leis -->
+        <div class="law-search-box">
+          <span class="law-search-icon" aria-hidden="true">🔍</span>
+          <input type="text" id="law-search-input" class="law-search-input" placeholder="Buscar lei, número, tema (recuo, lote, gabarito, manancial...)" aria-label="Buscar leis no catálogo">
+          <button id="btn-clear-law-search" class="btn-clear-law-search" type="button" aria-label="Limpar busca" style="display: none;">&times;</button>
+        </div>
+
+        <!-- Banner Educativo da Pirâmide de Leis (Prevalência) -->
+        <div class="pyramid-banner" style="margin-bottom: 8px;">
+          <strong>🔺 Pirâmide Normativa (Prevalência Automática):</strong><br>
+          <span style="font-size: 0.71rem; color: #475569;">
+            <strong>Federal</strong> (Normas Gerais) &gt; <strong>Estadual</strong> (Regional/Mananciais) &gt; <strong>Municipal</strong> (Uso Local).<br>
+            A norma municipal suplementa o interesse local e jamais pode contrariar a proteção ambiental federal ou estadual.
+          </span>
+        </div>
+
+        <!-- Filtros por Esfera Federativa (Pirâmide de Kelsen) -->
+        <div class="law-filter-chips" role="radiogroup" aria-label="Filtro por Esfera e Pirâmide de Leis">
+          <button class="law-filter-chip active" type="button" data-sphere="todas" role="radio" aria-checked="true">Todas (45)</button>
+          <button class="law-filter-chip" type="button" data-sphere="federal" role="radio" aria-checked="false">🔺 1. Federais (10)</button>
+          <button class="law-filter-chip" type="button" data-sphere="estadual" role="radio" aria-checked="false">🔺 2. Estaduais (3)</button>
+          <button class="law-filter-chip" type="button" data-sphere="municipal" role="radio" aria-checked="false">🔺 3. Municipais (32)</button>
+        </div>
+
+        <!-- Contador e Resumo -->
+        <div class="law-list-header">
+          <span class="law-list-subtitle">Inteligência Normativa Territorial</span>
+          <span id="laws-count-badge" class="badge-audit badge-purple">Carregando...</span>
+        </div>
+
+        <!-- Container do Rol de Leis (Cards) -->
+        <div id="laws-list-container" class="laws-list-container" role="feed" aria-busy="false">
+          <!-- Injetado dinamicamente via legislation-catalog.js -->
+        </div>
+
+        <!-- Nota explicativa institucional -->
+        <div class="law-notice-card">
+          💡 <strong>Inteligência Territorial:</strong> Clique em qualquer zona do mapa para inspecionar os parâmetros e as leis que incidem exatamente sobre aquele local.
+        </div>
+      </div>
+
+      <!-- ABA 3: CONSULTA COM IA TERRITORIAL -->
+      <div id="tab-pane-ai" class="tab-pane" role="tabpanel" aria-label="Assistente IA Territorial" style="display: none;">
+        <div class="pyramid-banner" style="margin-bottom: 12px; background: #eff6ff; border-left: 4px solid #2563eb;">
+          <strong>🧠 Inteligência Territorial Integrada e Irrestrita:</strong><br>
+          <span style="font-size: 0.72rem; color: #1e3a8a;">
+            Faça perguntas abertas em linguagem natural sobre qualquer uma das <strong>13 Cartas do Plano Diretor 2026</strong>, as <strong>22 Obras Prioritárias (SRQ-01 a SRQ-22)</strong>, bairros, distritos, atividades (pousadas, indústrias, desdobro), outorga onerosa, declividade ou acervo de 1.709 artigos legais.
+          </span>
+        </div>
+        <div class="ai-sug-header">Perguntas Rápidas e Temas em Destaque</div>
+        <div class="ai-chips-grid" style="margin-bottom: 14px;">
+          <button type="button" class="ai-chip" data-query="O que é ruim em São Roque segundo o diagnóstico territorial, leis e o Plano Diretor?">⚠️ Diagnóstico Territorial e Gargalos</button>
+          <button type="button" class="ai-chip" data-query="Quais as diretrizes da Carta II sobre a Macrozona de Urbanização Específica (ZUE)?">📜 Carta II: ZUE em Mananciais</button>
+          <button type="button" class="ai-chip" data-query="Quais são as regras de zoneamento e parcelamento em Canguera na Carta VII?">🍇 Carta VII: Zoneamento de Canguera</button>
+          <button type="button" class="ai-chip" data-query="Quais são as restrições construtivas e de saneamento na APA de Itupararanga?">💧 APA de Itupararanga & Mananciais</button>
+          <button type="button" class="ai-chip" data-query="Quais são as 22 obras estruturantes e prioritárias de São Roque?">🗺️ Carta XIII: 22 Obras Prioritárias</button>
+          <button type="button" class="ai-chip" data-query="Posso abrir uma pousada em Canguera na Rota do Vinho?">🏨 Pousada em Canguera</button>
+          <button type="button" class="ai-chip" data-query="Qual o lote mínimo, taxa de ocupação e recuos no Jardim Villaça?">📐 Lote Mínimo no Jardim Villaça</button>
+          <button type="button" class="ai-chip" data-query="Como funciona o desdobro e fracionamento de lote em São Roque?">✂️ Como fazer Desdobro de Lote?</button>
+          <button type="button" class="ai-chip" data-query="O que define a Carta I sobre o Macrozoneamento Municipal de 2026?">📍 Carta I: Macrozoneamento 2026</button>
+          <button type="button" class="ai-chip" data-query="Posso parcelar ou construir em terreno com declividade acima de 30%?">⛰️ Declividade > 30% e Nascentes</button>
+          <button type="button" class="ai-chip" data-query="Onde posso construir galpão industrial e comercial em Maylasky?">🏭 Galpão e Indústria em Maylasky</button>
+          <button type="button" class="ai-chip" data-query="Como funciona a Outorga Onerosa e a Transferência de Potencial Construtivo?">💰 Outorga Onerosa (OODC) e TPC</button>
+          <button type="button" class="ai-chip" data-query="Quais são os limites de altura e restrições do Aeroporto Catarina?">✈️ Aeroporto Catarina (ASA 20km)</button>
+          <button type="button" class="ai-chip" data-query="Qual a população e quantidade de domicílios de São Roque no Censo 2022?">👥 População Censo IBGE 2022</button>
+        </div>
+        <div class="law-notice-card" style="margin-top: 10px;">
+          ✨ <strong>Dica de Uso:</strong> Use o atalho <code>/</code> ou <code>Ctrl + K</code> em qualquer momento para abrir e focar a barra de pesquisa IA. Você pode digitar perguntas completas e detalhadas!
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- HUD Superior de Coordenadas Flutuante -->
+  <div id="coord-hud" class="coord-hud" aria-live="polite">
+    <span id="coord-text" class="coord-text">UTM 23S: Carregando...</span>
+    <button id="btn-copy-coord" class="btn-copy-coord" type="button" title="Copiar coordenadas" aria-label="Copiar coordenadas atuais">
+      📋 Copiar
+    </button>
+  </div>
+
+  <!-- Toast Notificação -->
+  <div id="toast-msg" class="toast-msg" role="status" aria-live="polite">
+    Coordenadas copiadas!
+  </div>
+
+  <!-- Botões de Ação Flutuante (FAB) na Zona Natural do Polegar -->
+  <nav class="fab-container" aria-label="Ações Rápidas do Mapa">
+    <button id="btn-gps" class="fab-btn" type="button" aria-label="Selecionar Local no Mapa" title="Selecionar Local no Mapa">📍</button>
+    <button id="btn-reset-zoom" class="fab-btn" type="button" aria-label="Centralizar no Município de São Roque" title="Centralizar São Roque">🏙️</button>
+    <button id="btn-layers-fab" class="fab-btn fab-primary" type="button" aria-label="Alternar Painel Flutuante de Camadas" title="Camadas & Território">📑</button>
+  </nav>
+</div>
+
+<!-- Modal de Inspeção de Atributos -->
+<div id="feature-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="modal-title">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 id="modal-title" class="modal-title">Detalhes do Elemento</h2>
+      <button id="modal-close" class="modal-close" type="button" aria-label="Fechar janela de detalhes">&times;</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+  </div>
+</div>
+
+<!-- Aplicação Principal (Módulo ES6) -->
+<script type="module" src="js/app.js?v=5"></script>
+</body>
+</html>

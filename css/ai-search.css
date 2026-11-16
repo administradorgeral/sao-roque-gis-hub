@@ -1,0 +1,1499 @@
+/*
+ * SÃO ROQUE GIS HUB · ESTILOS DA CAIXA DE PESQUISA E ASSISTENTE IA TERRITORIAL
+ * Padrão Imersivo Glassmorphism, Alta Acessibilidade (WCAG 2.1 AA) e Responsividade
+ */
+
+/* Container Principal da Barra de Busca com IA Flutuante */
+.ai-search-container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 32px));
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-sans);
+}
+
+.ai-search-container.is-open {
+  width: min(880px, calc(100vw - 32px));
+}
+
+/* Wrapper do Input com Efeito Glassmorphism e Borda Brilhante */
+.ai-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(37, 99, 235, 0.35);
+  border-radius: 28px;
+  padding: 4px 6px 4px 14px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.ai-search-container:focus-within .ai-search-input-wrapper,
+.ai-search-input-wrapper.is-focused {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.22), 0 0 0 3px rgba(37, 99, 235, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Ícone Animado de Brilho IA */
+.ai-search-sparkle-icon {
+  font-size: 1.25rem;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: aiSparklePulse 3s infinite ease-in-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+@keyframes aiSparklePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); }
+  50% { transform: scale(1.15) rotate(12deg); filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.7)); }
+}
+
+/* Campo de Texto Principal */
+.ai-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.92rem;
+  font-family: var(--font-sans);
+  color: #0f172a;
+  padding: 8px 4px;
+  min-width: 0;
+}
+
+.ai-search-input::placeholder {
+  color: #64748b;
+  font-size: 0.86rem;
+  transition: color 0.2s;
+}
+
+.ai-search-input:focus::placeholder {
+  color: #94a3b8;
+}
+
+/* Ações no Canto Direito do Input */
+.ai-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tecla de Atalho Visual [/] */
+.ai-search-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  user-select: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ai-search-kbd:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Botão Limpar Busca */
+.ai-search-btn-icon {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ai-search-btn-icon:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Botão de Enviar Pergunta com IA */
+.ai-search-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 7px 15px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.ai-search-btn-submit:hover {
+  background: linear-gradient(135deg, #172554 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+
+.ai-search-btn-submit:active {
+  transform: translateY(0);
+}
+
+/* Botão de Configurações da IA (Engrenagem) */
+.ai-search-btn-config {
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ai-search-btn-config:hover {
+  color: #2563eb;
+  background: #eff6ff;
+  transform: rotate(30deg);
+}
+
+/* Dropdown Flutuante de Sugestões e Respostas */
+.ai-search-dropdown {
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(226, 232, 240, 0.8);
+  max-height: calc(88vh - 60px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  scroll-behavior: smooth;
+  animation: aiDropdownSlide 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-search-dropdown::-webkit-scrollbar {
+  width: 7px;
+}
+
+.ai-search-dropdown::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.ai-search-dropdown::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.ai-search-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@keyframes aiDropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Seção de Sugestões Rápidas */
+.ai-sug-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-chip {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-chip:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+/* Card de Resposta Inteligente */
+.ai-response-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-response-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+}
+
+.ai-response-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ai-badge-ia {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.ai-badge-model {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.ai-response-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+/* Corpo da Resposta */
+.ai-response-text {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #334155;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid #2563eb;
+}
+
+/* Grid de Parâmetros Técnicos Urbanísticos */
+.ai-params-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.ai-params-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.ai-param-item {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.ai-param-label {
+  font-size: 0.68rem;
+  color: #64748b;
+  text-transform: uppercase;
+  display: block;
+}
+
+.ai-param-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+  font-family: var(--font-mono);
+}
+
+/* Embasamento Normativo */
+.ai-laws-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-laws-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.ai-laws-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-law-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Ações Espaciais no Mapa */
+.ai-actions-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-actions-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #1e40af;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-actions-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-ai-action {
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  border-radius: 18px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
+}
+
+.btn-ai-action:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.btn-ai-action:active {
+  transform: translateY(0);
+}
+
+/* Estado de Carregamento da IA */
+.ai-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  gap: 12px;
+  color: #475569;
+}
+
+.ai-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: aiSpin 0.8s linear infinite;
+}
+
+@keyframes aiSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-loading-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Modal de Configuração de Chave Gemini */
+.ai-config-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ai-config-modal-card {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Estilo do Botão na Aba do Painel Lateral */
+.panel-tab-btn-ai {
+  position: relative;
+}
+
+.panel-tab-btn-ai::after {
+  content: "✨";
+  font-size: 0.75rem;
+  margin-left: 3px;
+}
+
+/* Responsividade em Dispositivos Móveis */
+@media (max-width: 768px) {
+  .ai-search-container {
+    top: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .ai-search-input-wrapper {
+    padding: 3px 5px 3px 10px;
+  }
+
+  .ai-search-input {
+    font-size: 0.84rem;
+  }
+
+  .ai-search-btn-submit span:not(.btn-spark) {
+    display: none;
+  }
+
+  .ai-search-btn-submit {
+    padding: 6px 10px;
+    border-radius: 50%;
+  }
+
+  .ai-search-kbd {
+    display: none;
+  }
+
+  .ai-search-dropdown {
+    max-height: calc(80vh - 60px);
+  }
+}
+
+/* --- INDICADOR E CARD DE PONTO ATIVO NO MAPA (SELECTION PIN) --- */
+.ai-pin-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #166534;
+  box-shadow: 0 2px 8px rgba(22, 101, 52, 0.08);
+  animation: aiFadeIn 0.2s ease-in-out;
+}
+
+@keyframes aiFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-pin-indicator-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-pin-indicator-badge {
+  background: #16a34a;
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ai-pin-clear-btn {
+  background: none;
+  border: none;
+  color: #15803d;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.ai-pin-clear-btn:hover {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+/* Card Destacado de Contexto do Ponto Selecionado */
+.ai-pin-context-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  border: 1.5px solid #0284c7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.ai-pin-context-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ai-pin-context-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.ai-pin-context-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-pin-context-label {
+  color: #475569;
+  font-weight: 600;
+}
+
+.ai-pin-context-val {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Vetor de Participação Popular (Audiências Públicas) */
+.ai-participacao-box {
+  background: #fdf4ff;
+  border: 1.5px solid #d946ef;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.ai-participacao-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #86198f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-participacao-content {
+  font-size: 0.78rem;
+  line-height: 1.48;
+  color: #581c87;
+}
+
+/* Alerta de Rigor Crítico e Técnico */
+.ai-critica-box {
+  background: #fff1f2;
+  border-left: 4px solid #e11d48;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-top: 8px;
+  font-size: 0.77rem;
+  color: #881337;
+  line-height: 1.45;
+}
+
+.ai-critica-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: #9f1239;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Botões de Ação Interativa no Mapa (Leaflet Bridge) */
+.ai-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 3px 2px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.ai-action-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.ai-action-btn.ai-action-layer {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.ai-action-btn.ai-action-layer:hover {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+}
+
+.ai-action-btn.ai-action-flyto {
+  background: #fdf2f8;
+  color: #be185d;
+  border-color: #fbcfe8;
+}
+
+.ai-action-btn.ai-action-flyto:hover {
+  background: #db2777;
+  color: #ffffff;
+  border-color: #be185d;
+}
+
+.ai-action-btn.ai-action-obra {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.ai-action-btn.ai-action-obra:hover {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #b45309;
+}
+
+/* Formatação Markdown Rica no Card de Resposta */
+.ai-markdown-body h2, .ai-markdown-body h3, .ai-markdown-body h4 {
+  color: #0f172a;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.ai-markdown-body h3 {
+  font-size: 0.88rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+.ai-markdown-body h4 {
+  font-size: 0.82rem;
+}
+
+.ai-markdown-body p {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+
+.ai-markdown-body ul, .ai-markdown-body ol {
+  margin: 6px 0 10px 18px;
+  padding: 0;
+}
+
+.ai-markdown-body li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+
+.ai-markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.74rem;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ai-markdown-body th, .ai-markdown-body td {
+  border: 1px solid #cbd5e1;
+  padding: 5px 8px;
+  text-align: left;
+}
+
+.ai-markdown-body th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ai-markdown-body tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.ai-markdown-body blockquote {
+  border-left: 3px solid #3b82f6;
+  background: #f8fafc;
+  padding: 6px 12px;
+  margin: 8px 0;
+  font-style: italic;
+  color: #334155;
+  border-radius: 0 4px 4px 0;
+}
+
+.ai-markdown-body code {
+  font-family: var(--font-mono);
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  color: #0369a1;
+}
+
+.ai-argon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #e0e7ff;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(30, 27, 75, 0.2);
+}
+
+.ai-complete-badge {
+  margin-top: 14px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   BOTÃO EXPLÍCITO DE FECHAR O MODAL DE RESPOSTA DA IA
+   ========================================================================== */
+.ai-response-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-close-ai-response {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 18px;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn-close-ai-response .btn-close-icon {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #64748b;
+  transition: color 0.15s;
+}
+
+.btn-close-ai-response:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.15);
+}
+
+.btn-close-ai-response:hover .btn-close-icon {
+  color: #b91c1c;
+}
+
+.btn-close-ai-response:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   CAIXA DE RÉPLICA & APROFUNDAMENTO CONTEXTUAL (ai-followup-box)
+   ========================================================================== */
+.ai-followup-box {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  margin-top: 6px;
+}
+
+.ai-followup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-followup-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.80rem;
+  color: #1e293b;
+}
+
+.ai-followup-icon {
+  font-size: 1rem;
+  color: #2563eb;
+}
+
+/* Toggle de Busca Web */
+.ai-web-search-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 14px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.ai-web-search-toggle input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #2563eb;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.ai-web-search-toggle:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Wrapper do Input da Réplica */
+.ai-followup-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #93c5fd;
+  border-radius: 24px;
+  padding: 3px 6px 3px 12px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+  transition: all 0.2s ease;
+}
+
+.ai-followup-input-wrapper:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  background: #ffffff;
+}
+
+.ai-followup-sparkle {
+  font-size: 1rem;
+  color: #3b82f6;
+  margin-right: 8px;
+}
+
+.ai-followup-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.88rem;
+  font-family: var(--font-sans);
+  color: #0f172a;
+  padding: 6px 4px;
+  min-width: 0;
+}
+
+.ai-followup-input::placeholder {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.ai-followup-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 18px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ai-followup-submit-btn:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+}
+
+.ai-followup-submit-btn:active {
+  transform: translateY(0);
+}
+
+.ai-followup-arrow {
+  font-size: 0.85rem;
+  transition: transform 0.15s;
+}
+
+.ai-followup-submit-btn:hover .ai-followup-arrow {
+  transform: translateX(2px);
+}
+
+/* Sugestões de Réplica (Chips) */
+.ai-followup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-followup-chip {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ai-followup-chip:hover {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+/* Barra de Atalhos de Mapa */
+.ai-map-shortcuts-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.ai-map-shortcuts-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-map-shortcuts-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   EXTENSÃO CONTÍNUA DA RESPOSTA (ai-thread-turn)
+   ========================================================================== */
+.ai-thread-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  animation: aiThreadFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes aiThreadFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-thread-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 6px 0;
+}
+
+.ai-thread-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.ai-thread-divider-badge {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
+  padding: 2px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ai-thread-question {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.ai-thread-q-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.ai-thread-q-avatar {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1e40af;
+  text-transform: uppercase;
+}
+
+.ai-thread-web-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.ai-thread-q-text {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ai-thread-answer {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+}
+
+/* Indicador de carregamento no thread */
+.ai-thread-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  color: #475569;
+  font-size: 0.80rem;
+  font-weight: 500;
+}
+
+.ai-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: aiSpin 0.7s linear infinite;
+}
+
+.ai-thread-loading-text {
+  color: #1e3a8a;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   CARD DE FONTES WEB AUDITÁVEIS & MULTIDIMENSIONAIS (ai-sources-card)
+   ========================================================================== */
+.ai-sources-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ai-sources-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ai-sources-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ai-sources-icon {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.ai-sources-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ai-sources-title {
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.02em;
+}
+
+.ai-sources-subtitle {
+  font-size: 0.70rem;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+.ai-sources-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ai-sources-tab-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 3px 9px;
+  font-size: 0.70rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.ai-sources-tab-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.ai-sources-tab-btn.active {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+}
+
+.ai-sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-source-item {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.ai-source-item:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ai-source-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ai-source-index {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  font-family: var(--font-mono);
+}
+
+.ai-source-pillar-tag {
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.ai-source-pillar-juridico .ai-source-pillar-tag {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border-color: #ddd6fe;
+}
+
+.ai-source-pillar-cientifico .ai-source-pillar-tag {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.ai-source-pillar-noticias .ai-source-pillar-tag {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.ai-source-pillar-local .ai-source-pillar-tag {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.ai-source-role-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ai-source-role-regra {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+
+.ai-source-role-alerta {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.ai-source-role-apoio {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.ai-source-role-comparativo {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.ai-source-domain {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.ai-source-item-title {
+  font-size: 0.79rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-source-external-arrow {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.ai-source-item:hover .ai-source-external-arrow {
+  color: #2563eb;
+  transform: translate(1px, -1px);
+}
+
+.ai-source-item-snippet {
+  font-size: 0.71rem;
+  color: #475569;
+  margin-top: 3px;
+  line-height: 1.4;
+}

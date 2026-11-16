@@ -1,0 +1,21 @@
+### Diagnóstico Territorial, Geotécnico e Jurídico: Gargalos, Passivos e Restrições de São Roque/SP
+
+A interpretação técnica da indagação recai sobre os fatores limitantes ao desenvolvimento urbano e rural do Município de São Roque/SP, estruturando-se no levantamento de vulnerabilidades geotécnicas, passivos ambientais, deficiências de infraestrutura, vedações normativas e tensões socioespaciais consolidadas nos diagnósticos do Plano Diretor Municipal.
+
+---
+
+### 1. Vulnerabilidades Físico-Ambientais e Áreas de Risco
+
+*   **Declividade Crítica ($\ge 30\%$ a $> 45\%$):** 
+    O relevo acidentado do Planalto Atlântico impõe severas restrições geotécnicas. Vertentes com declividade entre 30% e 45% (e escarpamentos superiores a 45%, como nas encostas do Morro do Cruzeiro e bordas de maciços residuais) apresentam alta suscetibilidade a rastejos, escorregamentos translacionais e corridas de massa. A ocupação dessas encostas intensifica a instabilidade mecânica do solo pela retirada da cobertura vegetal e sobrecarga de aterros desordenados.
+*   **Inundações e Alagamentos na Bacia do Ribeirão Aracaí:** 
+    A calha principal do Ribeirão Aracaí e seus afluentes (como o Córrego Carambeí) sofrem com estrangulamentos hidráulicos decorrentes do assoreamento, da retificação histórica de cursos d'água e da sobreposição de áreas urbanizadas sobre planícies aluviais. A elevada taxa de impermeabilização no centro urbano acelera o tempo de concentração das águas pluviais, resultando em picos de cheia recorrentes, refluxo de galerias e colapso do sistema de micro e macrodrenagem.
+*   **Fragilidade Hidrogeológica da APA de Itupararanga:** 
+    A porção sul/sudoeste do município integra a Área de Proteção Ambiental da Bacia Hidrográfica do Rio Sorocaba e Médio Tietê (APA de Itupararanga). Trata-se de uma zona de recarga de aquíferos fraturados e sedimentares com alta vulnerabilidade à contaminação. O avanço da ocupação desordenada e o uso intensivo de defensivos agrícolas geram risco direto de eutrofização do reservatório e comprometimento da segurança hídrica regional.
+
+---
+
+### 2. Gargalos Estruturais de Mobilidade
+
+*   **SP-270 (Rodovia Raposo Tavares) como Efeito Barreira:** 
+    A rodovia secciona o tecido urbano de São Roque, operando como vetor de segregação socioespacial ("efeito barreira"). A confluência entre o tráfego regional pesado de cargas e o tráfego local intraurbano sat

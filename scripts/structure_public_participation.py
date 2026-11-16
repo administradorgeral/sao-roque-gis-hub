@@ -1,0 +1,88 @@
+import re
+import json
+
+with open('data/sugestoes_publicas_raw.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+
+# Identificar temas recorrentes e sugestões chave
+sugestoes_estruturadas = [
+    {
+        "id": "SUG_PRESERVACAO_MANANCIAIS_APA",
+        "tema": "Proteção Ambiental, Nascentes e APA de Itupararanga",
+        "palavras_chave": ["nascente", "manancial", "itupararanga", "comdema", "preservacao", "mata atlantica", "desmatamento", "agua"],
+        "proponente": "Conselho Municipal de Meio Ambiente (COMDEMA) e Cidadãos",
+        "pedido_principal": "Exigência de apresentação de mapa completo de nascentes, proteção estrita dos mananciais da Represa de Itupararanga, vedação a desmatamentos e restrição severa a novos loteamentos de média/alta densidade na bacia hidrográfica sul.",
+        "posicao_tecnica_prefeitura": "Acolhido integralmente. O Macrozoneamento (Carta I) consolidou a Macrozona de Proteção Ambiental e a Carta II delimitou a ZUE Chácaras em Manancial com lote mínimo de 5.000 m² e taxa de ocupação máxima de 50%, preservando a zona de amortecimento da represa.",
+        "impacto_territorial": "Bloqueio a parcelamentos urbanos convencionais em Canguera, Sorocamirim e Pavão. Exigência de aprovação pela Fundação Florestal e CETESB."
+    },
+    {
+        "id": "SUG_DESDOBRO_CHACARAS_MAYLASKY",
+        "tema": "Redução de Lote Mínimo e Desdobro de Chácaras em Maylasky, Monte Verde e Caetê",
+        "palavras_chave": ["chacara", "desdobro", "fracionamento", "lote minimo", "maylasky", "caete", "monte verde", "500 m2", "1000 m2", "heranca"],
+        "proponente": "Moradores e Proprietários de Chácaras de Maylasky, Bairro Caetê e Monte Verde",
+        "pedido_principal": "Solicitação para reduzir o lote mínimo de 5.000 m² para 500 m² ou 1.000 m² na região de Chácaras Monte Verde / Maylasky e Caetê, a fim de viabilizar a divisão de terrenos entre herdeiros, desdobros familiares e regularização de imóveis consolidados.",
+        "posicao_tecnica_prefeitura": "Acolhido com condicionantes técnicas rigorosas. A Prefeitura manteve a necessidade de preservação da baixa densidade, mas previu na Carta V e na LC 102/2020 critérios para regularização fundiária de interesse específico (REURB-E) e desdobros condicionados à comprovação de taxa de permeabilidade ≥ 55% e solução adequada de esgotamento sanitário sem contaminação do lençol freático.",
+        "impacto_territorial": "Não é permitida a subdivisão desenfreada que descaracterize a zona rural/chácaras. Desdobros exigem processo formal de licenciamento e atendimento aos índices do Quadro VIII da Minuta 2026."
+    },
+    {
+        "id": "SUG_HABITACAO_POPULAR_AEIS",
+        "tema": "Habitação de Interesse Social (AEIS) e Regularização Fundiária (REURB)",
+        "palavras_chave": ["aeis", "reurb", "habitacao popular", "moradia", "baixa renda", "paisagem colonial", "goiana", "regularizacao", "invasao"],
+        "proponente": "Lideranças Comunitárias dos Bairros Paisagem Colonial, Goianã, Maylasky e São João Novo",
+        "pedido_principal": "Criação de programas efetivos de habitação de interesse social para famílias de baixa renda, contenção de ocupações irregulares em encostas de risco e priorização de obras de asfalto, redes de esgoto e contenção de encostas.",
+        "posicao_tecnica_prefeitura": "Acolhido. O Plano Diretor 2026 delimitou na Carta IX as Áreas de Especial Interesse Social (AEIS 1 a 6), reservando áreas públicas e perímetros consolidados prioritários para projetos habitacionais populares (CDHU/Minha Casa Minha Vida) e programas de REURB-S com gratuidade cartorária.",
+        "impacto_territorial": "Prioridade de investimentos em infraestrutura básica e regularização registral em Paisagem Colonial, Maylasky e São João Novo."
+    },
+    {
+        "id": "SUG_ROTEIRO_VINHO_BOLSÕES",
+        "tema": "Turismo, Tráfego e Infraestrutura no Roteiro do Vinho (Canguera)",
+        "palavras_chave": ["roteiro do vinho", "canguera", "estrada do vinho", "turismo", "onibus", "estacionamento", "bolsoes", "transito", "adega"],
+        "proponente": "Associação do Roteiro do Vinho, Moradores e Empreendedores Turísticos de Canguera",
+        "pedido_principal": "Reivindicação de melhorias de mobilidade na Estrada do Vinho (SPV-077), criação de bolsões de estacionamento para ônibus de turismo e automóveis, ciclovia turística e proibição de usos industriais ou depósitos que descaracterizem a paisagem enoturística.",
+        "posicao_tecnica_prefeitura": "Acolhido integralmente. A Carta VII estabeleceu a ZUE-DT (Desenvolvimento Turístico), a Carta XII definiu a exigência obrigatória de bolsões e faixas paralelas de desaceleração (Art. 127), e a Carta XIII previu a obra prioritária SRQ-15 (Ciclovia e Bolsões na Estrada do Vinho).",
+        "impacto_territorial": "Exigência de recuo frontal qualificado para estacionamento em adegas/restaurantes e proibição de tráfego pesado de passagem."
+    },
+    {
+        "id": "SUG_CENTRO_DRENAGEM_FACHADAS",
+        "tema": "Requalificação do Centro, Combate a Enchentes e Fachadas Ativas",
+        "palavras_chave": ["centro", "enchente", "drenagem", "aracai", "praca da matriz", "fachada ativa", "john kennedy", "antonino dias bastos", "calcadao"],
+        "proponente": "Associação Comercial (ACIA), Comerciantes Centrais e Moradores da Bacia do Aracaí",
+        "pedido_principal": "Obras urgentes contra alagamentos recorrentes na Marginal (Av. Antonino Dias Bastos e John Kennedy), revitalização do Centro Histórico, modernização da Praça da Matriz, calçadas com acessibilidade e incentivo ao comércio com fachadas vivas/ativas.",
+        "posicao_tecnica_prefeitura": "Acolhido com prioridade máxima. Na Minuta 2026 foram instituídos os Projetos de Drenagem e 'Cidades Esponjas' (Art. 130), a Requalificação da Área Central (Art. 131) e as intervenções estruturantes SRQ-01, SRQ-02, SRQ-03 e SRQ-04 da Carta XIII.",
+        "impacto_territorial": "Implantação de piscinões de retenção a montante, alargamento de calhas e dispensa de recuos no alinhamento central para estimular comércio ativo de rua."
+    },
+    {
+        "id": "SUG_MOMBACA_DENSIDADE_TRABALHADORES",
+        "tema": "Adensamento Habitacional e Apoio a Trabalhadores no Bairro Mombaça",
+        "palavras_chave": ["mombaca", "castello branco", "trabalhadores", "apartamento", "multifamiliar", "gabarito", "densidade", "zue"],
+        "proponente": "Representantes do Setor Imobiliário e Empresas do Eixo Castello Branco / Catarina",
+        "pedido_principal": "Permissão para edificação residencial multifamiliar com maior gabarito e densidade no Bairro Mombaça para atender à demanda habitacional de trabalhadores das indústrias, shopping e aeroporto da Rodovia Castello Branco.",
+        "posicao_tecnica_prefeitura": "Acolhido pontualmente. A Minuta 2026 (Quadro I - ZUE) criou o 'Perímetro Especial Mombaça', admitindo elevação do Coeficiente de Aproveitamento até 1.2 e gabarito até 24 metros exclusivamente para residencial multifamiliar de apoio a trabalhadores, condicionado à Outorga Onerosa (OODC).",
+        "impacto_territorial": "Flexibilização controlada na divisa norte sem comprometer a vocação turística e com contrapartida financeira ao FMDU."
+    },
+    {
+        "id": "SUG_SAO_JOAO_NOVO_VARZEAS",
+        "tema": "Integração Urbana, Linha Férrea e Várzeas de São João Novo",
+        "palavras_chave": ["sao joao novo", "varzea", "ferrovia", "transposicao", "alagamento", "chacaras sjn", "estacao"],
+        "proponente": "Comunidade e Lideranças do Distrito de São João Novo",
+        "pedido_principal": "Resolução do isolamento provocado pela linha férrea que divide o distrito, contenção de alagamentos periódicos nas áreas de várzea e manutenção do padrão de chácaras residenciais e tranquilidade rural.",
+        "posicao_tecnica_prefeitura": "Acolhido. A Carta VI consolidou a ZUE-SJN (baixa densidade), e a Carta XIII instituiu as obras SRQ-19 (Transposição Urbana sobre a ferrovia) e SRQ-20 (Diques e bacias de contenção de cheias na várzea).",
+        "impacto_territorial": "Proteção das várzeas e viabilização de circulação viária contínua entre os dois lados da linha férrea."
+    },
+    {
+        "id": "SUG_RODOVIA_RAPOSO_URBANIZACAO",
+        "tema": "Humanização da Raposo Tavares em Trecho Urbano (Av. Roberto de Mattos)",
+        "palavras_chave": ["raposo tavares", "roberto de mattos", "travessia", "passarela", "marginal", "anel viario", "velocidade"],
+        "proponente": "Moradores dos bairros seccionados pela rodovia (Gabriel Piza, Goianã, Marmeleiro, Vila Aguiar)",
+        "pedido_principal": "Redução do risco de atropelamentos e acidentes na Rodovia Raposo Tavares, implantação de passarelas, semáforos, calçadas e conversão do trecho em avenida urbana integrada à cidade.",
+        "posicao_tecnica_prefeitura": "Acolhido integralmente. O Art. 128 da Minuta institui formalmente a transformação da SP-270 em 'Avenida Roberto de Mattos', servindo como via arterial do Anel Viário (obras SRQ-06, SRQ-07 e SRQ-08 da Carta XIII).",
+        "impacto_territorial": "Transição de rodovia expressa para avenida com passeios arborizados, canteiro central e travessias seguras."
+    }
+]
+
+print(f"Estruturados {len(sugestoes_estruturadas)} vetores principais de participação popular.")
+
+with open('data/participacao_popular_plano_diretor.json', 'w', encoding='utf-8') as f:
+    json.dump(sugestoes_estruturadas, f, ensure_ascii=False, indent=2)
+
+print("Salvo em data/participacao_popular_plano_diretor.json")
