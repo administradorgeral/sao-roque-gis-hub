@@ -1,0 +1,32 @@
+name: Sync EPROCLEG (Voz do Bairro)
+
+on:
+  schedule:
+    - cron: "20 8 * * *" # diário, 05:20 (Brasília)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Baixar proposições da Câmara (API pública open-data-leg)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python scripts/sync_eprocleg_camara.py --anos "2017,2026"
+
+      - name: Commit do banco e do índice atualizados
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/camara_eprocleg_sao_roque.db data/voz_do_bairro_resumo.json
+          git diff --cached --quiet || git commit -m "chore(voz-do-bairro): sync diário EPROCLEG $(date -u +%Y-%m-%d)"
+          git push

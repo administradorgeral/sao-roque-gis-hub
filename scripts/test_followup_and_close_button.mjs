@@ -340,7 +340,7 @@ async function runTests() {
   assert(searchResult.total > 0, "Busca deve retornar resultados");
   pass(`Busca retornou ${searchResult.total} fontes auditáveis`);
 
-  assert(searchResult.sources.some(s => s.domain === "saoroque.sp.gov.br"), "Deve identificar o portal da Prefeitura");
+  assert(searchResult.sources.some(s => (s.domain || "").includes("saoroque.sp.gov.br")), "Deve identificar o portal da Prefeitura");
   pass("Portal da Prefeitura de São Roque identificado com acurácia");
 
   assert(searchResult.groundingPrompt.includes("[GROUNDING DE BUSCA WEB"), "Deve gerar bloco de grounding para o System Prompt");

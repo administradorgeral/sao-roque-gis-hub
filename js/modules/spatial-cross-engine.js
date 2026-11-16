@@ -745,7 +745,8 @@ export class SpatialCrossEngine {
         lat,
         lng,
         [zonaSigla, zoneamentoMinuta2026?.sigla].filter(Boolean),
-        `${nearestStreet?.nome || ""} ${distritoNome} ${nearestNeighborhood?.nome || ""}`
+        `${distritoNome} ${nearestNeighborhood?.nome || ""}`,
+        nearestStreet?.nome || ""
       ) : null
     };
   }

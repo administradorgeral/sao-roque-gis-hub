@@ -162,7 +162,7 @@ async function runTestSuite() {
   });
 
   assert(fakeElement.innerHTML.includes("ai-sources-card"), "Turno inicial deve renderizar o card de fontes");
-  assert(fakeElement.innerHTML.includes("Base de Conhecimento Multidimensional"), "Deve conter o título enriquecido");
+  assert(fakeElement.innerHTML.includes("Evidências recuperadas e verificadas agora"), "Deve conter o título do card de evidências");
 
   console.log("[OK] Integração no renderizador de respostas verificado com sucesso.");
 

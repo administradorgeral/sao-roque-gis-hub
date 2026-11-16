@@ -61,13 +61,13 @@ export class AISearchEngine {
 
     // Configuração do Modelo Gemini 4 Argon
     this.model = "gemini-4-argon";
-    const workerBaseUrl = window.SR_GEMINI_WORKER_URL || "";
+    const workerBaseUrl = (typeof window !== "undefined" && window.SR_GEMINI_WORKER_URL) || "";
     this.geminiProxyUrl = workerBaseUrl
       ? `${workerBaseUrl.replace(/\/+$/, "")}/api/argon`
       : (
-      ["localhost", "127.0.0.1"].includes(window.location.hostname)
-        ? "http://127.0.0.1:8000/api/argon"
-        : ""
+        ["localhost", "127.0.0.1"].includes(window.location?.hostname)
+          ? "http://127.0.0.1:8000/api/argon"
+          : ""
       );
     this.useGemini = Boolean(this.geminiProxyUrl);
 
@@ -323,6 +323,27 @@ export class AISearchEngine {
     let obrasProximas = dossier?.obras_estruturantes_proximas || [];
     let pedidosLocais = dossier?.demandas_populares || [];
 
+    // Seção 5 — Voz do Bairro: dossiê do banco EPROCLEG real (todas as proposições
+    // da região + mesma rua, com ou sem pino GPS) e demandas das audiências.
+    let vozDoBairro = dossier?.voz_do_bairro || null;
+    if (!vozDoBairro && this.crossEngine?.communityVoice?.isLoaded) {
+      const endereco = [bairro?.nome, distrito, zonaKey, zoneamentoMinuta2026?.sigla].filter(Boolean).join(" ");
+      try {
+        vozDoBairro = this.crossEngine.communityVoice.buildCommunityVoiceDossier(
+          lat,
+          lng,
+          [zonaKey, zoneamentoMinuta2026?.sigla].filter(Boolean),
+          endereco,
+          logradouro?.nome || ""
+        );
+      } catch (err) {
+        console.warn("[AISearchEngine] Falha ao montar dossiê da Voz do Bairro:", err);
+      }
+    }
+    if (vozDoBairro?.pedidos_moradores_audiencias?.length && !pedidosLocais.length) {
+      pedidosLocais = vozDoBairro.pedidos_moradores_audiencias;
+    }
+
     // Coordenadas Projetadas (UTM Fuso 23S / SIRGAS 2000)
     let utmStr = "UTM Fuso 23S";
     if (typeof window !== "undefined" && window.proj4) {
@@ -355,6 +376,7 @@ export class AISearchEngine {
       utmStr,
       obrasProximas,
       pedidosLocais,
+      vozDoBairro,
       dossier
     };
   }
@@ -545,16 +567,17 @@ export class AISearchEngine {
   }
 
   // --- CHAMADA DIRETA AO GOOGLE GEMINI 4 ARGON (TURNO ÚNICO) ---
-  async callGeminiArgon(userQuery, deepContext) {
+  async callGeminiArgon(userQuery, deepContext, webData = null) {
     if (!this.geminiProxyUrl) return null;
     const url = this.geminiProxyUrl;
     const systemPrompt = this.contextBuilder.buildSystemPrompt(deepContext);
+    const groundingPrompt = webData?.groundingPrompt || "";
 
     const payload = {
       contents: [
         {
           role: "user",
-          parts: [{ text: `${systemPrompt}\n\nPERGUNTA DO USUÁRIO:\n${userQuery}` }]
+          parts: [{ text: `${systemPrompt}\n\n${groundingPrompt ? `${groundingPrompt}\n\n` : ""}PERGUNTA DO USUÁRIO:\n${userQuery}` }]
         }
       ],
       generationConfig: {
@@ -739,8 +762,7 @@ ${followUpQuery}`;
     if (this.useGemini) {
       try {
         const deepContext = this.buildDeepContext(qRaw, pinCtx, kb);
-        const augmentedContext = webData?.groundingPrompt ? `${deepContext}\n\n${webData.groundingPrompt}` : deepContext;
-        const argonResponse = await this.callGeminiArgon(qRaw, augmentedContext);
+        const argonResponse = await this.callGeminiArgon(qRaw, deepContext, webData);
         if (argonResponse && argonResponse.length > 100) {
           console.log("[AISearchEngine] ✅ SUCESSO: Resposta do Gemini 4 Argon (sem fallback)");
           return {

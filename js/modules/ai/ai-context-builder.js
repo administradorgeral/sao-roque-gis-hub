@@ -63,7 +63,7 @@ Você deve atuar com o rigor de um Perito Judicial e Consultor de Políticas Urb
    - Hidrologia e Geomorfologia: Várzeas do Aracaí/Guaçu sujeitas a refluxo e inundações; declividades críticas > 30% e > 45°.
    - Saneamento ambiental: Capacidade de suporte de bacias hidrográficas e riscos de contaminação do lençol freático por fossas rudimentares.
 3. EMBASAMENTO DE NOTÍCIAS, FATOS REAIS E VOZ DO BAIRRO:
-   - Câmara Municipal de São Roque: Histórico do EPROCLEG (22.468 proposições reais de vereadores).
+   - Câmara Municipal de São Roque: base EPROCLEG disponível nesta consulta; quando o dossiê da Seção 5 trouxer números da região, use SOMENTE esses números. Se o dossiê não estiver presente, não atribua contagens de protocolos a nenhum bairro.
    - Audiências Públicas do Plano Diretor: Reivindicações populares de Canguera (Rota do Vinho), Maylasky, Centro e São João Novo.
    - Notícias e Debates Públicos: Histórico de enchentes no centro, gargalos da SP-270 Raposo Tavares, pressões de adensamento e regularização de núcleos clandestinos.
 
@@ -138,6 +138,74 @@ ${deepContext}`;
   }
 
   /**
+   * Formata a Seção 5 (Voz do Bairro) apenas com dados apurados.
+   * Se não houver dossiê do ponto, diz explicitamente que não há recorte —
+   * nunca preenche com rótulos genéricos ("Base conectada", "Zeladoria, Asfalto...").
+   */
+  formatVozDoBairro(p) {
+    const voz = p?.vozDoBairro || p?.dossier?.voz_do_bairro;
+    if (!voz) {
+      return `  - Sem recorte territorial da Voz do Bairro para este ponto: marque um ponto no mapa para consultar o EPROCLEG por bairro, zona e logradouro. Não invente contagens de protocolos.`;
+    }
+
+    const linhas = [];
+    const regiao = voz.regiao_identificada;
+    if (regiao) {
+      const est = voz.estatisticas_regiao || {};
+      linhas.push(`  - Região Parlamentar: ${regiao.nome_regiao} (${est.total_proposicoes || 0} proposições — ${est.indicacoes || 0} indicações, ${est.requerimentos || 0} requerimentos, ${est.projetos_de_lei || 0} projetos de lei)`);
+    }
+    if (voz.distancia_centroide_m != null) {
+      linhas.push(`  - Distância do ponto ao centroide da região: ${voz.distancia_centroide_m} m${voz.match_por_endereco ? " (endereço confirma o bairro)" : ""}`);
+    }
+
+    const ranking = (voz.ranking_temas || []).slice(0, 4);
+    if (ranking.length) {
+      linhas.push(`  - Ranking real de demandas da região: ${ranking.map((t, i) => `${i + 1}º ${t.tema_nome} (${t.quantidade} protocolos / ${t.percentual}%)`).join("; ")}`);
+    }
+
+    const regProps = (voz.proposicoes_regiao || []).filter((pr) => pr && pr.titulo);
+    if (regProps.length) {
+      linhas.push(`  - Protocolos da região (inclui proposições sem pino GPS):`);
+      regProps.slice(0, 4).forEach((pr) => {
+        linhas.push(`    * ${pr.titulo} (${pr.data_formatada || pr.ano} - ${pr.autor}): ${pr.descricao_resumida || ""}`);
+      });
+    }
+
+    const st = voz.logradouro_citado;
+    const stProps = voz.proposicoes_mesmo_logradouro || [];
+    if (st?.nome && stProps.length) {
+      linhas.push(`  - Mesmo logradouro (${st.nome}) — ${stProps.length} protocolos casados por endereço:`);
+      stProps.slice(0, 3).forEach((pr) => {
+        linhas.push(`    * ${pr.titulo} (${pr.data_formatada || pr.ano}): ${pr.descricao_resumida}`);
+      });
+    }
+
+    const gps = voz.proposicoes_proximas_gps || [];
+    if (gps.length) {
+      linhas.push(`  - Protocolos com coordenada no raio de 1,8 km:`);
+      gps.slice(0, 3).forEach((pr) => {
+        linhas.push(`    * [${pr.distancia_m}m] ${pr.titulo} (${pr.data_formatada || pr.ano} - ${pr.autor}): ${pr.descricao_resumida}`);
+      });
+    }
+
+    const textos = voz.resumo_por_texto;
+    if (textos?.total_protocolos) {
+      const rank = (textos.ranking_temas || []).slice(0, 3).map((t) => `${t.tema_id} (${t.quantidade})`).join("; ");
+      linhas.push(`  - Termos do endereço (${textos.termos.join(", ")}) aparecem em ${textos.total_protocolos} proposições: ${rank}`);
+    }
+
+    const aud = voz.pedidos_moradores_audiencias || [];
+    if (aud.length) {
+      linhas.push(`  - Sugestões dos moradores nas audiências do Plano Diretor:`);
+      aud.slice(0, 3).forEach((pm) => {
+        linhas.push(`    * [${pm.status_prefeitura}] ${pm.local_alvo}: ${String(pm.pedido_dos_moradores || "").slice(0, 160)} -> Minuta 2026: ${String(pm.resposta_oficial_minuta_2026 || "sem resposta registrada").slice(0, 160)}`);
+      });
+    }
+
+    return linhas.length ? linhas.join("\n") : "  - Sem protocolos catalogados para este ponto.";
+  }
+
+  /**
    * Constrói o contexto territorial e jurídico de alta densidade semântica
    */
   buildDeepContext(query, pinCtx, kb, crossEngine) {
@@ -201,12 +269,7 @@ Coordenadas Exatas: Lat ${p.lat.toFixed(5)}, Lng ${p.lng.toFixed(5)} (${p.utmStr
   - Restrições Críticas: ${p.zonaData?.restricoes || (p.insideAPA ? "Tratamento biológico obrigatório e anuência prévia da Fundação Florestal" : "Conforme LC 40/2006")}
 • [Camada: Carta XIII - 22 Obras Estruturantes]: ${p.obrasProximas.length ? p.obrasProximas.map(o => `${o.codigo} - ${o.nome}`).join("; ") : "Nenhuma intervenção imediata no raio local"}
 • [Seção 5: Voz do Bairro - Câmara Municipal (EPROCLEG) & Audiências Públicas]:
-${p.dossier?.voz_do_bairro ? `  - Região Parlamentar: ${p.dossier.voz_do_bairro.regiao_identificada?.nome_regiao || p.distrito} (${p.dossier.voz_do_bairro.estatisticas_regiao?.total_proposicoes || 0} proposições reais catalogadas)
-  - Ranking de Demandas Mais Recorrentes: ${p.dossier.voz_do_bairro.resumo_ia_shorthand?.top_temas || "Zeladoria, Asfalto e Trânsito"}
-  - Protocolos Georreferenciados no Entorno Imediato (< 1.8km):
-${p.dossier.voz_do_bairro.proposicoes_proximas_gps?.slice(0, 3).map(pr => `    * [${pr.distancia_m}m] ${pr.titulo} (${pr.data_formatada || pr.ano} - ${pr.autor}): ${pr.descricao_resumida}`).join("\n") || "    * Sem protocolos pontuais com GPS no raio imediato"}
-  - Sugestões dos Moradores no Plano Diretor (Audiências Públicas):
-${p.dossier.voz_do_bairro.pedidos_moradores_audiencias?.slice(0, 2).map(pm => `    * [${pm.status_prefeitura}] ${pm.local_alvo}: ${pm.pedido_dos_moradores.slice(0, 140)}... -> Resposta Prefeitura na Minuta 2026: ${pm.resposta_oficial_minuta_2026.slice(0, 140)}...`).join("\n") || "    * Diretrizes gerais participativas acolhidas"}` : "Base de dados legislativa e popular conectada"}`);
+${this.formatVozDoBairro(p)}`);
 
       if (p.dossier?.regras_juridicas_incidentes?.length) {
         parts.push(`• [Regras Jurídicas & Condicionantes Incidentes no Ponto (${p.dossier.regras_juridicas_incidentes.length} regras incidentes)]:

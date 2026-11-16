@@ -260,18 +260,20 @@ export class AIWebSearchEngine {
         snippet: "Portal oficial com o acervo completo da revisão do Plano Diretor: Minutas das Leis Complementares 39 e 40, Cartas I a XIII e estudos de suporte territorial."
       },
       {
+        // Entrada mantida apenas como roteamento de tema: o conteúdo exibido vem do
+        // dossiê real do EPROCLEG (CommunityVoiceEngine), nunca deste texto.
         id: "loc-audiencias-voz-do-bairro",
         pillar: "local",
-        pillarName: "Voz do Bairro · Moradores",
+        pillarName: "Voz do Bairro · EPROCLEG",
         pillarIcon: "🏛️",
         orientation: "APOIO",
-        orientationLabel: "Participação Popular nas Audiências",
-        domain: "saoroque.sp.gov.br",
-        title: "Audiências Públicas do Plano Diretor · Sugestões da População",
-        url: "https://www.saoroque.sp.gov.br",
+        orientationLabel: "Câmara Municipal e Moradores",
+        domain: "camarasaoroque.sp.gov.br",
+        title: "Câmara Municipal de São Roque · EPROCLEG e Audiências do Plano Diretor",
+        url: "https://legislativo.camarasaoroque.sp.gov.br/portal-legislativo/proposicoes?cliente=cmsaoroque",
         category: "Controle Social e Participação Cidadã",
-        keywords: ["voz do bairro", "moradores", "audiencia publica", "sugestoes", "canguera", "maylasky", "sao joao novo", "centro expandido", "reclamacoes", "prioridades"],
-        snippet: "Manifestações oficiais de moradores em audiências públicas exigindo proteção florestal na ZUPA, contenção da expansão urbana desordenada e infraestrutura antes de novos loteamentos."
+        keywords: ["voz do bairro", "moradores", "audiencia publica", "sugestoes", "canguera", "maylasky", "sao joao novo", "centro expandido", "reclamacoes", "prioridades", "requerimento", "indicacao", "protocolo"],
+        resumo_por_pilar: true
       },
       {
         id: "loc-ibge-cidades",
@@ -311,6 +313,20 @@ export class AIWebSearchEngine {
     // ETAPA 1: Seleção e pontuação dos 4 Pilares do Conhecimento
     const scoredSources = this.scoreKnowledgeBase(qLower, pinContext);
 
+    // Voz do Bairro: se o ponto traz dossiê do EPROCLEG, a fonte do pilar local é
+    // um cartão montado com os protocolos reais da região/logradouro — não um
+    // texto fixo de catálogo.
+    const vozCard = this.buildVozDoBairroCard(qLower, pinContext);
+    if (vozCard) {
+      const idx = scoredSources.findIndex(s => s.id === "loc-audiencias-voz-do-bairro");
+      if (idx >= 0) {
+        scoredSources[idx] = { ...vozCard, score: Math.max(scoredSources[idx].score, vozCard.score || 0) };
+      } else {
+        scoredSources.push(vozCard);
+      }
+      scoredSources.sort((a, b) => (b.score || 0) - (a.score || 0));
+    }
+
     // ETAPA 2: Seleção de referências candidatas por pilar.
     // Os textos do catálogo não são exibidos como evidência: cada referência passa
     // por coleta no Worker antes de entrar na resposta.
@@ -337,16 +353,19 @@ export class AIWebSearchEngine {
       selectedSources.push(...topP);
     });
 
-    // Mantém até quatro candidatas para não sobrecarregar as fontes consultadas.
-    if (selectedSources.length < 4) {
-      scoredSources.forEach(s => {
-        if (!selectedSources.some(sel => sel.id === s.id)) {
-          selectedSources.push(s);
-        }
-      });
+    // Mantém exatamente quatro candidatas (uma por pilar) para não sobrecarregar
+    // as consultas. Fonte ausente em um pilar é substituída pela próxima
+    // pontuada de qualquer pilar, preservando a diversidade sem concentrar tudo
+    // no primeiro pilar da lista.
+    for (const s of scoredSources) {
+      if (selectedSources.length >= 4) break;
+      if (!selectedSources.some(sel => sel.id === s.id)) selectedSources.push(s);
     }
 
-    const finalSources = await this.collectLiveEvidence(qClean, selectedSources.slice(0, 4));
+    // Reserva final: as 4 candidatas primeiro; se a coleta ao vivo falhar, o
+    // fallback respeita a ordem 4 candidatas -> demais referências pontuadas.
+    const fallbackOrder = [...selectedSources, ...scoredSources];
+    const finalSources = await this.collectLiveEvidence(qClean, selectedSources.slice(0, 4), fallbackOrder);
 
     // ETAPA 3: somente conteúdo recuperado agora entra no grounding do modelo.
     const groundingPrompt = this.formatGroundingPrompt(qClean, finalSources, pinContext);
@@ -362,6 +381,63 @@ export class AIWebSearchEngine {
         local: finalSources.filter(s => s.pillar === "local")
       },
       groundingPrompt: groundingPrompt
+    };
+  }
+
+  /**
+   * Monta o cartão do pilar local a partir do dossiê real da Voz do Bairro.
+   * Fontes: projeções por região, mesmo logradouro e raio GPS do banco EPROCLEG.
+   */
+  buildVozDoBairroCard(qLower, pinContext) {
+    const voz = pinContext?.vozDoBairro || pinContext?.dossier?.voz_do_bairro;
+    if (!voz) return null;
+
+    const regiao = voz.regiao_identificada;
+    const est = voz.estatisticas_regiao || {};
+    const st = voz.logradouro_citado;
+    const stProps = voz.proposicoes_mesmo_logradouro || [];
+    const regProps = voz.proposicoes_regiao || [];
+    const gps = voz.proposicoes_proximas_gps || [];
+    if (!est.total_proposicoes && !stProps.length && !regProps.length && !gps.length) return null;
+
+    const referencia = stProps[0] || regProps[0] || gps[0] || null;
+    const ranking = (voz.ranking_temas || [])
+      .slice(0, 3)
+      .map(t => `${t.tema_nome} (${t.quantidade})`)
+      .join("; ") || "sem ranking apurado";
+
+    const trechos = [];
+    if (regiao) trechos.push(`Região parlamentar: ${regiao.nome_regiao} — ${est.total_proposicoes || 0} proposições reais no EPROCLEG`);
+    if (ranking !== "sem ranking apurado") trechos.push(`Demandas mais protocoladas: ${ranking}`);
+    if (st?.nome && stProps.length) {
+      trechos.push(`Logradouro ${st.nome}: ${stProps.length} outros protocolos citam esta via`);
+    }
+    if (referencia) {
+      trechos.push(`Exemplo: ${referencia.titulo} (${referencia.data_formatada || referencia.ano}) — ${referencia.descricao_resumida}`);
+    }
+
+    return {
+      id: "loc-audiencias-voz-do-bairro",
+      pillar: "local",
+      pillarName: "Voz do Bairro · EPROCLEG",
+      pillarIcon: "🏛️",
+      orientation: "ESTUDO_COMPARATIVO",
+      orientationLabel: "Dados reais da Câmara",
+      domain: "camarasaoroque.sp.gov.br",
+      title: referencia
+        ? `${referencia.titulo} · ${st?.nome || regiao?.nome_regiao || "São Roque"}`
+        : `EPROCLEG · ${regiao?.nome_regiao || "São Roque"}`,
+      url: referencia?.url_eprocleg || "https://legislativo.camarasaoroque.sp.gov.br/portal-legislativo/proposicoes?cliente=cmsaoroque",
+      category: "Câmara Municipal (EPROCLEG) e Audiências Públicas",
+      snippet: trechos.join(". ") + ".",
+      retrieval: "Consulta em tempo real ao banco EPROCLEG",
+      verifiedAt: new Date().toISOString(),
+      score: 12,
+      dados_voz_do_bairro: {
+        total_regiao: est.total_proposicoes || 0,
+        total_mesmo_logradouro: stProps.length,
+        total_raio_gps: gps.length
+      }
     };
   }
 
@@ -418,8 +494,35 @@ export class AIWebSearchEngine {
     return hits;
   }
 
-  async collectLiveEvidence(query, candidates) {
-    const workerBaseUrl = window.SR_GEMINI_WORKER_URL || "";
+  /**
+   * Coleta e verifica evidências ao vivo no Worker.
+   * Se a coleta falhar ou devolver menos de duas fontes verificadas, mantém as
+   * referências pontuadas do catálogo (com o trecho técnico já redigido) para
+   * que a resposta nunca fique sem grounding nem com um único cartão.
+   */
+  async collectLiveEvidence(query, candidates, fallbackSources = candidates) {
+    const live = await this.requestLiveEvidence(query, candidates);
+    // Só aceita a coleta ao vivo quando ela cobre todos os pilares candidatos;
+    // caso contrário todos os cartões apontariam para um único tipo de fonte.
+    const pilaresCandidatos = [...new Set(candidates.map(c => c.pillar))];
+    const cobreTodosOsPilares = pilaresCandidatos.every(p => live.some(s => s.pillar === p));
+    if (live.length >= 2 && cobreTodosOsPilares) return live;
+
+    const merged = [...live];
+    for (const candidate of fallbackSources) {
+      if (!merged.some(s => s.url === candidate.url)) {
+        merged.push({
+          ...candidate,
+          retrieval: "Referência do catálogo técnico (não verificada nesta consulta)"
+        });
+      }
+      if (merged.length >= 4) break;
+    }
+    return merged;
+  }
+
+  async requestLiveEvidence(query, candidates) {
+    const workerBaseUrl = (typeof window !== "undefined" && window.SR_GEMINI_WORKER_URL) || "";
     if (!workerBaseUrl || typeof fetch === "undefined") return [];
 
     const endpoint = `${workerBaseUrl.replace(/\/+$/, "")}/api/evidence`;

@@ -238,6 +238,9 @@ export class ModalDossierRenderer {
       const temasRank = voz.ranking_temas || [];
       const geocodedNear = voz.proposicoes_proximas_gps || [];
       const hearingDirect = voz.pedidos_moradores_audiencias || [];
+      const regProps = voz.proposicoes_regiao || [];
+      const streetProps = voz.proposicoes_mesmo_logradouro || [];
+      const streetName = voz.logradouro_citado?.nome || "";
 
       const vozCard = document.createElement("div");
       vozCard.className = "dossier-card";
@@ -316,6 +319,50 @@ export class ModalDossierRenderer {
                 </div>
               `).join("")}
             </div>
+          </div>
+        ` : ""}
+
+        <!-- 2.1 Protocolos da região sem pino GPS (vinculados pela ementa) -->
+        ${regProps.length ? `
+          <div style="margin-top: 10px; margin-bottom: 8px;">
+            <div style="font-size: 0.74rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+              📑 Protocolos vinculados a esta região (${est.total_proposicoes || regProps.length} no banco, incluindo os sem pino GPS):
+            </div>
+            <div class="modal-laws-list" style="max-height: 220px; overflow-y: auto;">
+              ${regProps.slice(0, 6).map(p => `
+                <div class="modal-law-item" style="border-left: 3px solid #0ea5e9; padding: 6px 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                    <div>
+                      <span class="dossier-badge dossier-badge-blue" style="font-size: 0.65rem; padding: 1px 5px;">${this.escapeHTML(p.tema_nome || p.tema_id || "Protocolo")}</span>
+                      <strong style="color: #1e293b; font-size: 0.76rem; margin-left: 4px;">${this.escapeHTML(p.titulo)}</strong>
+                      <div style="font-size: 0.68rem; color: #64748b; margin-top: 1px;">
+                        ${this.escapeHTML(p.autor)} · ${this.escapeHTML(p.data_formatada || String(p.ano))}
+                      </div>
+                    </div>
+                    <a href="${this.escapeHTML(p.url_eprocleg)}" target="_blank" rel="noopener noreferrer" class="btn-law-modal-link" style="font-size: 0.65rem; padding: 2px 6px;" title="Ver protocolo oficial no portal da Câmara">EPROCLEG ↗</a>
+                  </div>
+                  <div style="font-size: 0.71rem; color: #334155; margin-top: 3px; line-height: 1.35;">${this.escapeHTML(p.descricao_resumida)}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
+
+        <!-- 2.2 Protocolos que citam o mesmo logradouro do ponto -->
+        ${streetProps.length ? `
+          <div style="margin-top: 10px; margin-bottom: 8px;">
+            <div style="font-size: 0.74rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+              🛣️ Outros protocolos para o mesmo logradouro (${this.escapeHTML(streetName)}):
+            </div>
+            ${streetProps.slice(0, 5).map(p => `
+              <div class="dossier-demanda-card" style="margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; gap: 6px;">
+                  <strong style="color: #0f172a; font-size: 0.73rem;">${this.escapeHTML(p.titulo)}</strong>
+                  <span style="font-size: 0.65rem; color: #64748b; white-space: nowrap;">${this.escapeHTML(p.data_formatada || String(p.ano))}</span>
+                </div>
+                <div style="font-size: 0.7rem; color: #334155; line-height: 1.35;">${this.escapeHTML(p.descricao_resumida)}</div>
+              </div>
+            `).join("")}
           </div>
         ` : ""}
 
