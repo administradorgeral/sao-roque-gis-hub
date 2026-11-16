@@ -48,6 +48,12 @@ jobs:
               cp "$file" "_site/$file"
             done
 
+      - name: Configure Gemini Worker endpoint
+        env:
+          GEMINI_WORKER_URL: ${{ vars.GEMINI_WORKER_URL }}
+        run: |
+          node -e 'const fs = require("node:fs"); const url = process.env.GEMINI_WORKER_URL || ""; fs.writeFileSync("_site/js/modules/ai/worker-config.js", `export const GEMINI_WORKER_URL = ${JSON.stringify(url)};\n`);'
+
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:

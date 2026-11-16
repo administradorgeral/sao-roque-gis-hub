@@ -1,0 +1,30 @@
+name: Deploy Gemini Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - cloudflare/**
+      - .github/workflows/deploy-gemini-worker.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test Worker
+        run: node --test cloudflare/worker.test.mjs
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config cloudflare/wrangler.toml

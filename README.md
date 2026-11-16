@@ -12,7 +12,7 @@ WebGIS moderno com **arquitetura 100% full-screen imersiva**, componentizada e d
 * **Seleção no Mapa:** Marcador interativo de ponto (`📍`) com arrasto em tempo real e conversão métrica instantânea
 * **Conformidade Legal:** Decreto Federal 89.817/1984 (Padrão de Exatidão Cartográfica) e ABNT NBR 13.133
 * **Arquitetura:** Componentes ES6 desacoplados e reativos (`LayerManager`, `FloatingPanel`, `AttributeModal`, `AISearchEngine`)
-* **Hospedagem:** 100% estático, sem backend obrigatório, compatível com GitHub Pages e CDN
+* **Hospedagem:** interface estática no GitHub Pages; consultas Gemini protegidas por um Cloudflare Worker
 
 ---
 
@@ -78,6 +78,10 @@ python -m http.server 8000
 ```
 Acesse no seu navegador: [http://localhost:8000](http://localhost:8000)
 
+Para testar o Gemini localmente, defina `GEMINI_API_KEY` apenas no ambiente do
+terminal e execute `python scripts/dev_server.py`. O servidor atende somente em
+`127.0.0.1`; não coloque a chave no código nem a envie pelo navegador.
+
 ## 🌐 Publicação no GitHub Pages
 
 O workflow `Deploy to GitHub Pages` publica o site automaticamente quando há
@@ -92,3 +96,29 @@ Após a primeira publicação, o site ficará disponível em
 `https://administradorgeral.github.io/sao-roque-gis-hub/`. O workflow envia
 apenas os arquivos necessários ao site e omite o GeoJSON bruto de declividade,
 que não é utilizado pela aplicação web.
+
+### Consultas Gemini no site público
+
+O GitHub Pages é estático e não pode guardar uma chave Gemini com segurança.
+As consultas usam um Cloudflare Worker como proxy; a chave fica apenas como
+segredo do Worker. Se o Worker ou sua configuração não estiver disponível, a
+interface informa o erro e **não** substitui a resposta por uma resposta local.
+
+1. Revogue credenciais que tenham sido compartilhadas em chats ou commits.
+2. Em **GitHub → Settings → Secrets and variables → Actions**, crie os secrets
+   `CLOUDFLARE_API_TOKEN` (permissão de editar Workers) e
+   `CLOUDFLARE_ACCOUNT_ID`.
+3. Envie os arquivos do Worker para `main`; o workflow **Deploy Gemini Worker**
+   publicará `sao-roque-gis-gemini`.
+4. No painel Cloudflare, abra o Worker e adicione `GEMINI_API_KEY` como **secret**
+   em **Settings → Variables and Secrets**. Nunca use uma variável pública nem
+   adicione a chave ao repositório.
+5. Copie a URL `workers.dev` exibida pela Cloudflare. Em **GitHub → Settings →
+   Secrets and variables → Actions → Variables**, crie `GEMINI_WORKER_URL` com
+   essa URL (por exemplo, `https://sao-roque-gis-gemini.<subdominio>.workers.dev`).
+6. Execute novamente o workflow **Deploy to GitHub Pages**. Sem essa variável,
+   o site mostrará que o Gemini não está configurado, em vez de usar fallback.
+
+O Worker restringe chamadas à origem do GitHub Pages e limita cada endereço IP
+a 10 consultas por minuto. Esse limite é aproximado; configure também um limite
+de gastos no Cloudflare e monitore o uso da API Gemini.
