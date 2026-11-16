@@ -38,6 +38,48 @@ WebGIS moderno com **arquitetura 100% full-screen imersiva**, componentizada e d
 
 ---
 
+## ⚙️ Configuração da API do Google Gemini
+
+O São Roque GIS Hub usa o **gemini-4-argon** para respostas de IA territorial.
+
+### Configuração rápida:
+
+1. **Crie o arquivo .env:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Obtenha sua API key:**
+   - Acesse: https://aistudio.google.com/apikey
+   - Copie a key gerada
+
+3. **Configure no .env:**
+   ```
+   GEMINI_API_KEY=sua_api_key_aqui
+   ```
+
+4. **No browser (GitHub Pages ou local):**
+   - Abra o console do navegador (F12)
+   - Execute:
+     ```javascript
+     localStorage.setItem('SR_GEMINI_API_KEY', 'sua_api_key_aqui')
+     ```
+   - Recarregue a página
+
+### Para desenvolvimento local:
+
+Use o script de carregamento:
+```bash
+node scripts/load-env.js
+```
+
+Ou no HTML, inclua antes do `app.js`:
+```html
+<script type="module" src="scripts/load-env.js"></script>
+```
+
+---
+
 ## 📂 Estrutura de Diretórios
 ```
 sao-roque-gis-hub/
