@@ -1,2 +1,2 @@
-// Replaced by the Pages workflow with the public Worker URL.
-window.SR_GEMINI_WORKER_URL = "";
+// Public Worker endpoint. The Gemini API key is stored only as a Worker secret.
+window.SR_GEMINI_WORKER_URL = "https://sao-roque-gis-gemini.querubim.workers.dev";
