@@ -1,0 +1,73 @@
+{
+  "municipio": "São Roque",
+  "uf": "SP",
+  "codigo_ibge": "3550605",
+  "datum_oficial": "SIRGAS 2000 / UTM Fuso 23S (EPSG: 31983)",
+  "versao_catalogo": "1.2.0",
+  "data_atualizacao": "2026-11-14",
+  "fontes_homologadas": {
+    "federal": [
+      {
+        "id": "ibge_malha_municipal",
+        "orgao": "IBGE",
+        "camada": "Malha Municipal Oficial",
+        "tipo_geometria": "MultiPolygon",
+        "marco_legal": "Lei Federal 5.534/1968",
+        "escala": "1:50.000",
+        "url_origem": "https://servicodados.ibge.gov.br/api/v3/malhas/municipios/3550605",
+        "status": "aguardando_inclusao"
+      },
+      {
+        "id": "sgb_riscos_geologicos",
+        "orgao": "SGB / CPRM",
+        "camada": "Setores de Risco Alto e Muito Alto (R3/R4)",
+        "tipo_geometria": "Polygon",
+        "marco_legal": "Lei Federal 12.608/2012",
+        "escala": "1:5.000",
+        "url_origem": "https://rigeo.sgb.gov.br/handle/doc/24301",
+        "status": "aguardando_inclusao"
+      }
+    ],
+    "estadual": [
+      {
+        "id": "semil_apm_itupararanga",
+        "orgao": "SEMIL / SIGRH",
+        "camada": "Bacia de Proteção aos Mananciais - Represa de Itupararanga",
+        "tipo_geometria": "Polygon",
+        "marco_legal": "Lei Estadual 9.866/1997 e Lei Estadual 11.579/2003",
+        "escala": "1:25.000",
+        "status": "aguardando_inclusao"
+      }
+    ],
+    "municipal": [
+      {
+        "id": "zoneamento_pmd2006",
+        "orgao": "Prefeitura da Estância Turística de São Roque",
+        "camada": "Zoneamento Urbano e Rural Oficial (Plano Diretor Homologado)",
+        "tipo_geometria": "Polygon (31 zonas territoriais)",
+        "marco_legal": "Lei Complementar Municipal nº 40/2006",
+        "escala": "1:10.000 (PEC Classe A)",
+        "total_vertices": 14974,
+        "arquivo_geo": "data/pmsr_zoneamento_pmd2006.geojson",
+        "hash_geojson_sha256": "31f6ae7db0f36f521339ace91e881193b57e98d6833a62038933df8b040e3216",
+        "arquivo_fonte_original": "dados_oficiais/municipal/PMD2006_Zoneamento.kmz",
+        "hash_kmz_sha256": "627bd2b87b1138987fd1a1e0c210e6d01619b3a3e2fadc4044b4e100e19183ae",
+        "status": "integrada"
+      },
+      {
+        "id": "zoneamento_minuta_pmd2006",
+        "orgao": "Prefeitura da Estância Turística de São Roque",
+        "camada": "Minuta do Plano Diretor 2006 (Estudo Técnico Prévio)",
+        "tipo_geometria": "Polygon / MultiPolygon (33 zonas/polígonos)",
+        "marco_legal": "Estudo Técnico Urbanístico / Minuta Prévia do PMD 2006",
+        "escala": "1:10.000 (PEC Classe A)",
+        "total_vertices": 14638,
+        "arquivo_geo": "data/pmsr_zoneamento_minuta_pmd2006.geojson",
+        "hash_geojson_sha256": "6dbd3aa8f9e1b62171587dcc51c91d9da4e00a0a71fb6c4328303004a4abbe55",
+        "arquivo_fonte_original": "dados_oficiais/municipal/minutaPMD2006_Zoneamento.kmz",
+        "hash_kmz_sha256": "66908ef3a4df5ffa7a7177d5344cced9d4e787a39d4c93afc74c6af9f144b177",
+        "status": "integrada"
+      }
+    ]
+  }
+}
