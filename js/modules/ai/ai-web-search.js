@@ -311,15 +311,9 @@ export class AIWebSearchEngine {
     // ETAPA 1: Seleção e pontuação dos 4 Pilares do Conhecimento
     const scoredSources = this.scoreKnowledgeBase(qLower, pinContext);
 
-    // ETAPA 2: Consulta externa aberta via Wikipedia/OpenSearch para grounding em tempo real
-    let externalLive = [];
-    try {
-      externalLive = await this.queryOpenSearch(qClean);
-    } catch (e) {
-      // Degradação graciosa
-    }
-
-    // ETAPA 3: Agrupamento equilibrado por Pilar (Garante representatividade dos 4 pilares)
+    // ETAPA 2: Seleção de referências candidatas por pilar.
+    // Os textos do catálogo não são exibidos como evidência: cada referência passa
+    // por coleta no Worker antes de entrar na resposta.
     const byPillar = {
       juridico: [],
       cientifico: [],
@@ -333,35 +327,18 @@ export class AIWebSearchEngine {
       }
     });
 
-    if (externalLive.length > 0) {
-      externalLive.forEach(ext => {
-        byPillar.local.push({
-          id: `ext-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          pillar: "local",
-          pillarName: "Enciclopédia Aberta & Geografia",
-          pillarIcon: "🌐",
-          orientation: "ESTUDO_COMPARATIVO",
-          orientationLabel: "Fonte Aberta",
-          domain: ext.domain,
-          title: ext.title,
-          url: ext.url,
-          category: ext.category,
-          snippet: ext.snippet
-        });
-      });
-    }
-
-    // Seleciona as melhores fontes de cada pilar para compor o painel final
+    // Seleciona uma fonte candidata de cada pilar. O Worker acrescenta fontes
+    // novas encontradas na busca atual e verifica cada página antes de retorná-la.
     const selectedSources = [];
-    const maxPerPillar = 2; // Garante 2 de cada pilar (total até 8 fontes ricas)
+    const maxPerPillar = 1;
 
     ["juridico", "cientifico", "noticias", "local"].forEach(p => {
       const topP = byPillar[p].slice(0, maxPerPillar);
       selectedSources.push(...topP);
     });
 
-    // Se alguma categoria ficou vazia, preenche com as mais bem pontuadas gerais
-    if (selectedSources.length < 5) {
+    // Mantém até quatro candidatas para não sobrecarregar as fontes consultadas.
+    if (selectedSources.length < 4) {
       scoredSources.forEach(s => {
         if (!selectedSources.some(sel => sel.id === s.id)) {
           selectedSources.push(s);
@@ -369,10 +346,9 @@ export class AIWebSearchEngine {
       });
     }
 
-    // Limita entre 5 e 8 fontes de altíssimo valor
-    const finalSources = selectedSources.slice(0, 8);
+    const finalSources = await this.collectLiveEvidence(qClean, selectedSources.slice(0, 4));
 
-    // ETAPA 4: Formatação de Grounding para injeção dialética no Argon
+    // ETAPA 3: somente conteúdo recuperado agora entra no grounding do modelo.
     const groundingPrompt = this.formatGroundingPrompt(qClean, finalSources, pinContext);
 
     return {
@@ -442,47 +418,27 @@ export class AIWebSearchEngine {
     return hits;
   }
 
-  /**
-   * Consulta OpenSearch / Wikipedia para evidências abertas adicionais
-   */
-  async queryOpenSearch(query) {
-    if (typeof fetch === "undefined") return [];
+  async collectLiveEvidence(query, candidates) {
+    const workerBaseUrl = window.SR_GEMINI_WORKER_URL || "";
+    if (!workerBaseUrl || typeof fetch === "undefined") return [];
 
-    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), this.timeoutMs) : null;
-
+    const endpoint = `${workerBaseUrl.replace(/\/+$/, "")}/api/evidence`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs * 3);
     try {
-      const endpoint = `https://pt.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent("São Roque " + query)}&limit=2&namespace=0&format=json&origin=*`;
-      const resp = await fetch(endpoint, {
-        signal: controller?.signal,
-        headers: { "Accept": "application/json" }
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, sources: candidates }),
+        signal: controller.signal
       });
-      if (timer) clearTimeout(timer);
-
-      if (!resp.ok) return [];
-      const data = await resp.json();
-      
-      const titles = data[1] || [];
-      const snippets = data[2] || [];
-      const urls = data[3] || [];
-
-      const list = [];
-      for (let i = 0; i < titles.length; i++) {
-        if (titles[i] && urls[i]) {
-          list.push({
-            domain: "pt.wikipedia.org",
-            title: titles[i],
-            url: urls[i],
-            category: "Enciclopédia Aberta & Geografia",
-            snippet: snippets[i] || `Verbete territorial relacionado a ${titles[i]} no contexto de São Roque (SP).`,
-            retrieved_at: new Date().toISOString()
-          });
-        }
-      }
-      return list;
-    } catch (err) {
-      if (timer) clearTimeout(timer);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return Array.isArray(data.sources) ? data.sources : [];
+    } catch {
       return [];
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -539,8 +495,8 @@ export class AIWebSearchEngine {
           <div class="ai-sources-header-main">
             <span class="ai-sources-icon">📚</span>
             <div class="ai-sources-title-box">
-              <span class="ai-sources-title">Base de Conhecimento Multidimensional & Evidências Auditáveis (${sources.length})</span>
-              <span class="ai-sources-subtitle">⚖️ Jurídico & Regras · 🔬 Ciência & Catástrofes Similares · 📰 Notícias & Fatos · 🏛️ São Roque Local</span>
+              <span class="ai-sources-title">Evidências recuperadas e verificadas agora (${sources.length})</span>
+              <span class="ai-sources-subtitle">Cada cartão contém título e trecho extraídos da página consultada, com data de coleta.</span>
             </div>
           </div>
           <div class="ai-sources-tabs">
@@ -560,6 +516,7 @@ export class AIWebSearchEngine {
             else if (s.orientation === "ESTUDO_COMPARATIVO") orientationClass = "ai-source-role-comparativo";
 
             let pillarClass = `ai-source-pillar-${s.pillar}`;
+            const verifiedAt = s.verifiedAt ? new Date(s.verifiedAt).toLocaleString("pt-BR") : "Não verificada nesta consulta";
 
             return `
               <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="ai-source-item ${pillarClass}" data-pillar="${s.pillar}" title="Auditar no repositório oficial: ${s.url}">
@@ -571,6 +528,7 @@ export class AIWebSearchEngine {
                 </div>
                 <div class="ai-source-item-title">${s.title} <span class="ai-source-external-arrow">↗</span></div>
                 <div class="ai-source-item-snippet">${s.snippet}</div>
+                <div class="ai-source-item-snippet">${s.retrieval || "Referência recuperada"} · ${verifiedAt}</div>
               </a>
             `;
           }).join("")}

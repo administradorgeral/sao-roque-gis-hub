@@ -515,8 +515,8 @@ export class AIAnswerRenderer {
           <div class="ai-sources-header-main">
             <span class="ai-sources-icon">📚</span>
             <div class="ai-sources-title-box">
-              <span class="ai-sources-title">Base de Conhecimento Multidimensional & Evidências Auditáveis (${sources.length})</span>
-              <span class="ai-sources-subtitle">⚖️ Jurídico & Regras · 🔬 Ciência & Catástrofes Similares · 📰 Notícias & Fatos · 🏛️ São Roque Local</span>
+              <span class="ai-sources-title">Evidências recuperadas e verificadas agora (${sources.length})</span>
+              <span class="ai-sources-subtitle">Cada cartão contém título e trecho extraídos da página consultada, com data de coleta.</span>
             </div>
           </div>
           <div class="ai-sources-tabs">
@@ -540,6 +540,7 @@ export class AIAnswerRenderer {
             const pillarIcon = s.pillarIcon || "🌐";
             const pillarName = s.pillarName || s.category || "Fonte Oficial";
             const orientLabel = s.orientationLabel || s.orientation || "Referência";
+            const verifiedAt = s.verifiedAt ? new Date(s.verifiedAt).toLocaleString("pt-BR") : "Não verificada nesta consulta";
 
             return `
               <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="ai-source-item ${pillarClass}" data-pillar="${pillar}" title="Auditar no repositório oficial: ${s.url}">
@@ -551,6 +552,7 @@ export class AIAnswerRenderer {
                 </div>
                 <div class="ai-source-item-title">${s.title} <span class="ai-source-external-arrow">↗</span></div>
                 <div class="ai-source-item-snippet">${s.snippet}</div>
+                <div class="ai-source-item-snippet">${s.retrieval || "Referência recuperada"} · ${verifiedAt}</div>
               </a>
             `;
           }).join("")}
