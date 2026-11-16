@@ -735,6 +735,7 @@ ${followUpQuery}`;
         const augmentedContext = webData?.groundingPrompt ? `${deepContext}\n\n${webData.groundingPrompt}` : deepContext;
         const argonResponse = await this.callGeminiArgon(qRaw, augmentedContext);
         if (argonResponse && argonResponse.length > 100) {
+          console.log("[AISearchEngine] ✅ SUCESSO: Resposta do Gemini 4 Argon (sem fallback)");
           return {
             query: qRaw,
             titulo: isDiagnostic 
@@ -742,6 +743,7 @@ ${followUpQuery}`;
               : (pinCtx ? `Análise do Ponto Marcado (${pinCtx.distrito} · ${pinCtx.zonaNome})` : `Parecer Territorial: "${qRaw}"`),
             categoria: "Inteligência Geoespacial & Jurídica (Gemini 4 Argon)",
             isArgon: true,
+            isFallback: false,
             markdownText: argonResponse,
             pinContext: pinCtx,
             camadaSugerida: camadaSugerida,
@@ -751,15 +753,19 @@ ${followUpQuery}`;
           };
         }
       } catch (err) {
-        console.warn("[AISearchEngine] Gemini 4 Argon falhou, acionando fallback local exaustivo:", err);
+        console.error("[AISearchEngine] ❌ ERRO: Gemini 4 Argon FALHOU - Ativando FALLBACK", err);
       }
     }
 
     // 2. Fallback local exaustivo multi-eixo
+    console.log("[AISearchEngine] 🔄 Executando FALLBACK local...");
     const fallbackAnswer = this.synthesizeExhaustiveLocalFallback(qRaw, qNorm, pinCtx, kb, isDiagnostic);
     if (fallbackAnswer && typeof fallbackAnswer === "object") {
       fallbackAnswer.webSources = webData?.sources || [];
+      fallbackAnswer.isFallback = true;
+      fallbackAnswer.isArgon = false;
     }
+    console.log("[AISearchEngine] ℹ️ RESPOSTA: FALLBACK (não é Gemini 4 Argon)");
     return fallbackAnswer;
   }
 

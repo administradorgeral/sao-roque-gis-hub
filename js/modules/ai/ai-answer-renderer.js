@@ -248,7 +248,7 @@ export class AIAnswerRenderer {
 
     const modelBadge = data.isArgon 
       ? `<span class="ai-argon-badge">✨ Gemini 4 Argon · RAG Territorial</span>`
-      : `<span class="ai-badge ai-badge-ia">✨ Inteligência Territorial Crítica</span>`;
+      : `<span class="ai-badge ai-badge-fallback" style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;">⚠️ MODO FALLBACK (Local)</span>`;
 
     containerEl.innerHTML = `
       <div class="ai-response-card">
