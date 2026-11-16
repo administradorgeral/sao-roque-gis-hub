@@ -77,3 +77,18 @@ sao-roque-gis-hub/
 python -m http.server 8000
 ```
 Acesse no seu navegador: [http://localhost:8000](http://localhost:8000)
+
+## 🌐 Publicação no GitHub Pages
+
+O workflow `Deploy to GitHub Pages` publica o site automaticamente quando há
+push na branch `main`. Para ativar a publicação pela primeira vez:
+
+1. No GitHub, abra **Settings → Pages**.
+2. Em **Build and deployment → Source**, selecione **GitHub Actions**.
+3. Envie as alterações para `main` ou execute manualmente o workflow em
+   **Actions → Deploy to GitHub Pages → Run workflow**.
+
+Após a primeira publicação, o site ficará disponível em
+`https://administradorgeral.github.io/sao-roque-gis-hub/`. O workflow envia
+apenas os arquivos necessários ao site e omite o GeoJSON bruto de declividade,
+que não é utilizado pela aplicação web.
