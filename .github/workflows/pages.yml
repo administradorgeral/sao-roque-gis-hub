@@ -48,6 +48,16 @@ jobs:
               cp "$file" "_site/$file"
             done
 
+      - name: Configure public Worker URL
+        env:
+          GEMINI_WORKER_URL: ${{ vars.GEMINI_WORKER_URL }}
+        run: |
+          if [[ -n "$GEMINI_WORKER_URL" && ! "$GEMINI_WORKER_URL" =~ ^https://[A-Za-z0-9.-]+$ ]]; then
+            echo "GEMINI_WORKER_URL must be an https URL without a path" >&2
+            exit 1
+          fi
+          printf 'window.SR_GEMINI_WORKER_URL = "%s";\n' "$GEMINI_WORKER_URL" > _site/js/worker-config.js
+
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:

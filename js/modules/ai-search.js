@@ -61,8 +61,15 @@ export class AISearchEngine {
 
     // Configuração do Modelo Gemini 4 Argon
     this.model = "gemini-4-argon";
-    this.apiKey = (typeof localStorage !== "undefined" && localStorage.getItem("SR_GEMINI_API_KEY")) || "";
-    this.useGemini = true;
+    const workerBaseUrl = window.SR_GEMINI_WORKER_URL || "";
+    this.geminiProxyUrl = workerBaseUrl
+      ? `${workerBaseUrl.replace(/\/+$/, "")}/api/argon`
+      : (
+      ["localhost", "127.0.0.1"].includes(window.location.hostname)
+        ? "http://127.0.0.1:8000/api/argon"
+        : ""
+      );
+    this.useGemini = Boolean(this.geminiProxyUrl);
 
     // Ponto ativo no mapa (selection-pin-marker)
     this.activePin = null;
@@ -480,7 +487,7 @@ export class AISearchEngine {
     let isArgon = false;
 
     // 1. Chamada multi-turno ao Gemini 4 Argon
-    if (this.useGemini && this.apiKey) {
+    if (this.useGemini) {
       try {
         const argonResponse = await this.callGeminiArgonMultiTurn(q, this.conversationHistory, deepContext, webData);
         if (argonResponse && argonResponse.length > 50) {
@@ -539,8 +546,8 @@ export class AISearchEngine {
 
   // --- CHAMADA DIRETA AO GOOGLE GEMINI 4 ARGON (TURNO ÚNICO) ---
   async callGeminiArgon(userQuery, deepContext) {
-    if (!this.apiKey) return null;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    if (!this.geminiProxyUrl) return null;
+    const url = this.geminiProxyUrl;
     const systemPrompt = this.contextBuilder.buildSystemPrompt(deepContext);
 
     const payload = {
@@ -585,8 +592,8 @@ export class AISearchEngine {
 
   // --- CHAMADA MULTI-TURNO AO GOOGLE GEMINI 4 ARGON (RÉPLICA COM HISTÓRICO & WEB) ---
   async callGeminiArgonMultiTurn(followUpQuery, conversationHistory, deepContext, webData) {
-    if (!this.apiKey) return null;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    if (!this.geminiProxyUrl) return null;
+    const url = this.geminiProxyUrl;
     const systemPrompt = this.contextBuilder.buildSystemPrompt(deepContext);
 
     const contents = [];
@@ -729,7 +736,7 @@ ${followUpQuery}`;
     }
 
     // 1. Tentativa com o Modelo Gemini 4 Argon
-    if (this.useGemini && this.apiKey) {
+    if (this.useGemini) {
       try {
         const deepContext = this.buildDeepContext(qRaw, pinCtx, kb);
         const augmentedContext = webData?.groundingPrompt ? `${deepContext}\n\n${webData.groundingPrompt}` : deepContext;
